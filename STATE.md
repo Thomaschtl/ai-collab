@@ -1,32 +1,208 @@
-# Project State
+# CDM-PIKAN — STATE
 
-## Goal
-Train a Physics-Informed Neural Network (PINN) to reproduce cold dark matter (CDM)
-N-body simulation dynamics from initial conditions, using Euler/Zel'dovich equations
-as physics constraints. Training on EPFL Izar cluster; analysis locally.
+Updated: 2026-07-30
 
-## Validated
-- MLP with integral-form Euler PDE constraint converges.
-- Zel'dovich approximation used as analytic initial condition.
-- Pre-shell-crossing regime successfully learned in several configurations.
-- `codex-budget` project config applied: `gpt-5.6-terra`, reasoning `medium`,
-  tool output limit 5000 tokens.
+## Workflow rules
 
-## Current problem
-Diagnosing discrepancy between Zel'dovich approximation and N-body in the
-pre-shell-crossing regime. See `scripts/diagnose_zeldovich_vs_nbody_preshell.py`.
+- Read the project `AGENTS.md` before acting.
+- Never submit Izar jobs without explicit user confirmation.
+- Use targeted inspection only.
+- Use `codex-budget capture` for verbose commands and `codex-budget pack` before large logs.
+- Do not read large artifacts in full.
+- Ignore the removed local MCP `ai_bridge`.
+- ChatGPT maintains `STATE.md` and `TASK.md`; Codex writes `REPORT.md`.
+- Keep this repository free of secrets, credentials, personal paths, raw logs, and large artifacts.
 
-## Important files (in Thomaschtl/cdm-pikan)
-- `scripts/diagnose_zeldovich_vs_nbody_preshell.py` — active diagnostic script
-- `scripts/diagnose_caustic_loss_landscape.py` — caustic loss analysis
-- `scripts/euler_data.py` — data generation
-- `configs/` — training configurations
-- `run/` — local training runs (not pushed)
-- `models/` — checkpoints (not pushed)
+## Project
 
-## Current decision
-Focus on pre-shell-crossing diagnosis before tackling post-shell-crossing training.
+1D cosmological CDM collapse with Eulerian PINN/KAN.
 
-## Last update
-Date: 2026-07-30
-Task ID: bridge-setup
+Main code repository: `cdm-pikan`.
+Cluster: Izar.
+
+## Pre-shell baseline
+
+Target: pressureless Zel’dovich solution up to `a=0.98`.
+
+- Analytic density peak at `a=0.98`: about 50.
+- Best pre-shell KAN peak: about 48.8.
+- FWHM and enclosed masses were close to Zel’dovich.
+- Main difficulty: temporal consistency of the inertial term `Pi_a`, not only the final density profile.
+- Final pre-shell model should remain physics-only.
+
+## Post-shell fields and equations
+
+Current coarse-graining: N-body CIC plus Gaussian filtering at fixed `sigma=1`.
+
+Fields:
+
+- `rho`
+- `j = rho*u`
+- `P2 = j^2/rho + S`
+- `P3 = rho*u^3 + 3*u*S + Q`
+
+`S` is the effective multistream velocity-dispersion stress at the chosen coarse-graining scale.
+
+Integral quantities:
+
+- `M = integral rho dx`
+- `R_cont = M_a + j - j_min`
+- `K2 = integral P2 dx`
+- `P3_jump = P3(x) - P3(x_min)`
+- `Wg = integral j*g dx`
+
+Pointwise-in-time second-moment residual:
+
+`R_P2 = (3/2)*a^2*(K2_a + P3_jump) + 2*a*K2 - 2*Wg`
+
+Preferred time-weak form:
+
+`[(3/2)*a^2*K2]_(aL)^(aR) + integral_a[(3/2)*a^2*P3_jump - a*K2 - 2*Wg] da = 0`
+
+This avoids directly penalizing the poorly learned pointwise derivative `K2_a`.
+
+## Q closure
+
+Current frozen closure: `phys_sindy_kappajump_thr0.003`.
+
+- Trained a priori on true `sigma=1` fields.
+- In a closed run:
+  `rho_theta,j_theta,S_theta -> Q_closure -> P3_theta -> weak P2 residual`.
+- True `Q_f` is oracle-only and must not enter the final closed system.
+- Current evidence: the dominant error is the temporal trajectory of `K2`, not Q alone.
+- Do not redesign Q before stabilizing `rho,j,S + weak P2`.
+
+Later Q options:
+
+- constrained/a-posteriori SINDy or rollout training;
+- spatial CNN/nonlocal closure;
+- extended `(rho,j,S,Q)` system with an M4 closure, only after diagnostics.
+
+## Healthy supervised Run B
+
+Reference run:
+`postshell_sigma1_Bweighted_pure_supervised_h1024`
+
+Configuration:
+
+- MLP hidden=1024
+- Adam, 12000 steps
+- lr=2e-4
+- sigma=1
+- data weights:
+  - late=5
+  - center=12
+  - center_width=0.012
+  - rho_peak=12
+- frozen Q closure:
+  `phys_sindy_kappajump_thr0.003`
+
+At `a=1.02`:
+
+- target peak: 88.08
+- model peak: 86.21
+- rho RMSE: about 6.5%
+- j RMSE: about 6.2%
+- S RMSE: about 7.6%
+- `R_P2(pred)/R_P2(true)`: about 45.8
+
+Term diagnostic at `a=1.02`:
+
+- K2 error: 3.8%
+- Drag2 error: 3.8%
+- Wg2 error: 5.9%
+- P3_jump error: 16.1%
+- K2_a error: 628%
+- R_P2: about 55 times the exact residual
+
+Conclusion: good snapshots, bad temporal trajectory.
+
+A larger MLP h=2048 slightly improved pointwise fields but worsened `dK2` and the P2 residual. Model size alone does not solve temporal dynamics.
+
+## Optimization diagnostics
+
+Direct `-grad(P2 weak)` is locally useful:
+
+- lowers weak P2 loss;
+- lowers P2 residual;
+- barely changes data loss and fields for small steps;
+- gradient cosine with data: about `-0.132`, only mild conflict.
+
+Adam can transform this useful direction into a destructive update, especially on `j`.
+
+Previous SGD jobs 3099898–3099899:
+
+- improved P2 residual and dK2;
+- kept fields stable;
+- but started from a degraded retrained surrogate with peak about 77.9, not the healthy Run B state.
+
+Therefore they show that SGD is promising, but they are not the decisive continuation test.
+
+## Infrastructure fix
+
+Modified in the main project:
+
+- `scripts/train_postshell_moment_branch.py`
+- `run_postshell_branch_izar.slurm`
+
+Trainer now supports:
+
+- `train_state.pkl` with model parameters and full Adam state;
+- phase states;
+- periodic phase checkpoints;
+- field metrics every 50 steps;
+- `--resume_state`
+- `--skip_base_training`
+- `--phase_optimizer sgd`
+- `--phase_checkpoint_every`
+
+## Current decisive jobs
+
+Last known setup:
+
+- 3099912: rebuild healthy Run B deterministically.
+- 3099913: afterok 3099912, true resume with SGD.
+- 3099914: afterok 3099912, higher-LR stability probe.
+
+3099912 expected output:
+
+`run/postshell_sigma1_Bweighted_state_rebuild_h1024/train_state.pkl`
+
+3099913:
+
+- resume exact `train_state.pkl`
+- SGD, no momentum
+- lr=1e-6
+- `lambda_P2weak=1e-3`
+- weak windows 4,8
+- 500 steps
+- data loss active
+- frozen Q/SINDy closure
+- diagnostics/checkpoints every 50 steps
+
+3099914:
+
+- same resume
+- SGD, no momentum
+- lr=3e-6
+- 200-step stability probe
+- same diagnostics every 50 steps
+
+Do not infer live scheduler state from this file; check Izar.
+
+## Decision criterion
+
+Decisive question:
+
+Can weak P2 decrease from the true healthy Run B checkpoint while preserving the supervised solution?
+
+Success requires:
+
+- clear decrease of weak P2 / P2 ratio;
+- peak at `a=1.02` remains close to 86–88;
+- rho/j/S RMSE remain stable;
+- no strong drift of j.
+
+If 3099913 is stable, propose a continuation to 1500–3000 steps.
+
+Do not extend lr=3e-6 before inspecting 3099914.
