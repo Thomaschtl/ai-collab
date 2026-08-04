@@ -68,7 +68,10 @@ The current N-body data are validated as ground truth for this coarse-grained
 candidate closure of `M6` for a PINN predicting `M0..M5` with integral/weak
 equations and no rollout. A four-delta model is still not justified: its gain
 on M8 requires fitting M6 and M7 plus two extra moment equations, while the
-three-node closure has now passed an independent continuum test.
+three-node closure has now passed the continuum-limit sampling/deposition test.
+
+This uses the same exact-rank characteristic integrator at higher resolution;
+it is not a code-to-code verification with a second independent Vlasov solver.
 
 Detailed artifacts:
 `run/local_diag/continuous_sheet_vs_nbody_sigma1_098_108/REPORT.md` and
