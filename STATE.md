@@ -96,6 +96,24 @@ truth through M8, and tri-delta accuracy is not a particle/CIC artifact. Keep
 tri-delta as the minimal M6 closure candidate for a non-rollout PINN on M0..M5;
 four deltas remain unjustified.
 
+## Late-time limit of tri-delta
+
+The continuous-sheet tri-delta test was extended to
+`a=1.08,1.2,1.5,2,3,5,10,20`, with M6..M8 held out.
+
+- Up to `a=2`, only three streams occur and M6 error is at most 0.83%.
+- At `a=3`, five streams appear and M6 jumps to 12.74%.
+- At `a=5,10,20`, M6 errors are 24.51%, 31.46%, and 36.89%.
+- At `a=20`, caustic/multistream M6 errors are 41.28%/35.02%, while the
+  monostream exterior remains exact to better than 0.001%.
+- A joint N=131072, 32768-step reference reproduces the M6/M7/M8 closure errors
+  to displayed precision; projection uncertainty is below `7.2e-7`.
+
+Conclusion: tri-delta is justified for the current `a<=1.08` PINN, but it is
+not universal once more than three streams are present. Late-time work requires
+adaptive node count or more dynamic moments; a fixed four-delta is insufficient
+through `a=20`.
+
 ## Healthy supervised Run B
 
 Reference run:
