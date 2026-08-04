@@ -1,63 +1,75 @@
-# REPORT — Decisive SGD resumes from healthy Run B
+# REPORT — Continuous 1D phase sheet vs N-body ground truth
 
-Task ID: inspect-decisive-sgd-resumes
+Task ID: continuous-sheet-vs-nbody
 Status: completed
 
-Inspected Izar jobs 3099912, 3099913, and 3099914 with targeted Slurm,
-log-header, `metrics.json`, and checkpoint-path checks. No new Izar job was
-submitted.
+No Izar job and no KAN training were launched. The repository's cold 1D
+rank-force solver was run locally with Zel'dovich ICs. The converged reference
+uses 65,536 sheet characteristics and 4,096 time steps for each of the 101
+snapshots at `a=0.98..1.08`.
 
-## Resume verification
+## Method
 
-- **3099912**: `COMPLETED` (exit `0:0`, 1m34s). It rebuilt the 12,000-step
-  supervised h=1024 Run B. Its metrics reproduce the healthy solution: peak
-  86.205 at a=1.02 (target 88.084), rho/j/S RMSE 6.02/6.92/8.40%.
-- The exact saved state exists (12.7 MB):
-  `/scratch/izar/chetaill/CDM/cdm-pikan/run/postshell_sigma1_Bweighted_state_rebuild_h1024/train_state.pkl`.
-- **3099913** and **3099914** both completed (exit `0:0`) and their logs
-  explicitly restore that exact path; their arguments have
-  `skip_base_training=True`, SGD, frozen Q key
-  `phys_sindy_kappajump_thr0.003`, data loss active, and weak-P2 weight 1e-3.
-- Their first phase metric is peak 86.205 and rho/j/S = 6.02/6.92/8.40%, not
-  the old peak-77.9 / about-12% surrogate. The test is therefore decisive.
+- Evolve the connected cold phase sheet in Lagrangian order.
+- Integrate each linear sheet element through the same nodal CIC kernel as the
+  8,192-particle N-body data, then apply the same periodic Gaussian `sigma=1`.
+- Reconstruct raw moments `M0..M8`, with `u=dx/da`.
+- Compare fine-grained `x(q),u(q)`, caustics, stream counts, and phase curves.
+- Compare coarse-grained fields, `K2`, flux jumps, weak/integral P2 and M3
+  balances with windows `1,4,8,16`. No local PDE residual was introduced.
+- Re-evaluate the tri-delta prediction of held-out `M6..M8` on both truths.
 
-`weak P2` below is the raw weak-P2 phase loss; all error columns are percent.
+Numerical controls: spatial convergence `N=4096..65536`, temporal convergence
+`512..4096` steps, and sheet quadrature order `16->32`. The latter changes no
+moment by more than `1.2e-7` relative at `a=1.08`.
 
-| job (LR) | phase step | weak P2 | R_P2/R_true | dK2 | P3 jump | peak | rho / j / S |
-|---|---:|---:|---:|---:|---:|---:|---:|
-| 3099913 (1e-6) | 1 | 2.548 | 46.31 | 843.4 | 15.68 | 86.205 | 6.02 / 6.92 / 8.40 |
-|  | 250 | 2.351 | 45.46 | 824.9 | 15.17 | 86.204 | 5.99 / 6.74 / 8.07 |
-|  | 500 | 2.201 | 44.83 | 811.0 | 14.77 | 86.202 | 5.98 / 6.60 / 7.81 |
-| 3099914 (3e-6) | 1 | 2.548 | 46.30 | 843.2 | 15.68 | 86.205 | 6.02 / 6.92 / 8.39 |
-|  | 100 | 2.293 | 45.18 | 818.9 | 15.01 | 86.203 | 5.99 / 6.68 / 8.00 |
-|  | 200 | 2.110 | 44.39 | 801.7 | 14.50 | 86.201 | 5.97 / 6.52 / 7.71 |
+## Fine-grained result
 
-K2 RMSE also improves: 8.27% -> 6.99% (1e-6, 500 steps) and 6.57%
-(3e-6, 200 steps). No NaN, Inf, or divergence occurred in either phase.
+- Before shell crossing, relative errors in `psi` and `u` are below `8e-8`.
+- At `a=1.02..1.08`, `psi` error stays below `4.3e-7` and `u` below `7.3e-6`.
+- Both resolutions locate the same two post-shell caustics; caustic-position
+  disagreement is at most `3.3e-7` box units.
+- Stream-count maps agree in every one of the 2,048 sampled cells and both have
+  a maximum of three streams on this interval.
 
-Checkpoint paths:
+## Coarse-grained result, post-shell
 
-- 3099913: `.../postshell_sigma1_Bweighted_SGDweak_w1em3_lr1em6_500_fromB/phase_checkpoints/C2_stress_only_step00050.pkl` through `...step00500.pkl`; final state at `.../phase_diagnostics/C2_stress_only_state.pkl`.
-- 3099914: `.../postshell_sigma1_Bweighted_SGDweak_w1em3_lr3em6_200_fromB/phase_checkpoints/C2_stress_only_step00050.pkl` through `...step00200.pkl`; final state at `.../phase_diagnostics/C2_stress_only_state.pkl`.
+| comparison | rho | j | S | Q | K2 | P3 jump | M6 | M8 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| continuous sheet vs particle CIC | 0.037% | 0.097% | 0.002% | 0.002% | <0.001% | 0.095% | 0.093% | 0.093% |
+| converged sheet vs N=8192 sheet elements | <0.001% | 0.001% | <0.001% | 0.001% | <0.001% | 0.001% | 0.001% | 0.001% |
 
-## Interpretation
+Almost all visible discrepancy comes from replacing point-particle CIC by the
+continuous integration of the N=8192 elements, not from the dynamics or the
+resolution of the sheet.
 
-- **Does weak P2 decrease from healthy Run B?** Yes. Its raw loss falls 13.6%
-  at 1e-6 and 17.2% at 3e-6; R_P2/R_true falls 3.2% and 4.1%, respectively.
-- **Are fields preserved?** Yes. The peak stays 86.20 throughout; rho, j, S,
-  K2, and P3-jump errors all improve slightly. In particular, j is stable
-  (6.92% -> 6.60% or 6.52%), with no evidence of the Adam-like drift.
-- **Which LR is safer?** `1e-6`: it is demonstrated stable for 500 steps.
-  `3e-6` is promising and faster per step, but is only validated for 200;
-  it is not yet justified for a long continuation.
-- **Is the gain enough?** It is a useful, stable PDE reduction, but still
-  small relative to dK2 about 800% and R_P2/R_true about 45. It justifies a
-  staged 1500-step test, not an uninspected 3000-step extension.
+The weak-P2 RMS ratio sheet/N-body is `1.000` for every window. The residual
+difference normalized by the small N-body residual is `0.93%, 0.27%, 0.17%,
+0.13%` for windows `1,4,8,16`. The weak-M3 residual is closer to its numerical
+floor (`4.4e-9` at window 1), so its relative difference reaches 38% at window
+1 but falls to 6.3% at window 16; the actual M4-jump difference is only 0.093%.
 
-## One recommended next job (pending user confirmation)
+## Tri-delta robustness
 
-Start again from the exact healthy 3099912 `train_state.pkl`; SGD without
-momentum, LR `1e-6`, weak-P2 weight `1e-3`, weak windows `4,8`, active data
-loss and frozen Q/SINDy closure; run **1500 phase steps** with metrics and
-checkpoints every 50 steps, in a new output directory. Do not use 3e-6 or
-extend to 3000 before that result is inspected.
+| ground truth | M6 held-out | M7 held-out | M8 held-out |
+|---|---:|---:|---:|
+| particle CIC N=8192 | 1.358% | 0.295% | 2.441% |
+| continuous sheet N=65536 | 1.358% | 0.295% | 2.441% |
+
+The differences between these closure scores are below `1.4e-7` absolute.
+Therefore the tri-delta accuracy is not an artifact of macroparticle sampling
+or CIC: it describes the same coarse-grained collisionless sheet recovered by
+the converged continuous representation.
+
+## Decision
+
+The current N-body data are validated as ground truth for this coarse-grained
+1D Vlasov-Poisson problem through `M8`. Keep the tri-delta as the minimal
+candidate closure of `M6` for a PINN predicting `M0..M5` with integral/weak
+equations and no rollout. A four-delta model is still not justified: its gain
+on M8 requires fitting M6 and M7 plus two extra moment equations, while the
+three-node closure has now passed an independent continuum test.
+
+Detailed artifacts:
+`run/local_diag/continuous_sheet_vs_nbody_sigma1_098_108/REPORT.md` and
+`scripts/diagnose_continuous_sheet_vs_nbody.py` in the main project.

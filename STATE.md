@@ -1,6 +1,6 @@
 # CDM-PIKAN — STATE
 
-Updated: 2026-07-30
+Updated: 2026-08-04
 
 ## Workflow rules
 
@@ -77,6 +77,24 @@ Later Q options:
 - constrained/a-posteriori SINDy or rollout training;
 - spatial CNN/nonlocal closure;
 - extended `(rho,j,S,Q)` system with an M4 closure, only after diagnostics.
+
+## Continuous-sheet ground-truth validation
+
+The N-body CIC `sigma=1` moments were compared with a converged cold 1D phase
+sheet evolved from the same Zel'dovich ICs (65,536 characteristics, 4,096 time
+steps), then projected with the identical CIC plus Gaussian operator.
+
+- Fine-grained phase curves, two caustics, and one/three-stream maps agree.
+- Post-shell discrepancies: rho 0.037%, j 0.097%, S/Q 0.002%, M6/M8 0.093%.
+- Weak-P2 RMS is unchanged; its sheet/N-body difference is 0.13--0.93% of the
+  already small reference residual for windows 16--1.
+- Tri-delta held-out errors are identical on both truths: M6 1.358%, M7 0.295%,
+  M8 2.441%.
+
+Conclusion: the N-body data are a valid coarse-grained 1D Vlasov-Poisson ground
+truth through M8, and tri-delta accuracy is not a particle/CIC artifact. Keep
+tri-delta as the minimal M6 closure candidate for a non-rollout PINN on M0..M5;
+four deltas remain unjustified.
 
 ## Healthy supervised Run B
 
