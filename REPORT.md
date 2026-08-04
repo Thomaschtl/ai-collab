@@ -1,75 +1,63 @@
-# REPORT — Late-time tri-delta test on the continuous phase sheet
+# REPORT — Semi-oracle tri-delta in the weak M5 equation
 
-Task ID: late-time-tridelta-sheet
+Task ID: tridelta-weak-m5-oracle
 Status: completed
 
-No KAN, rollout, local PDE residual, or Izar job was used. Cold Zel'dovich
-phase sheets were evolved locally at:
+No KAN, training, rollout, local PDE residual, or Izar job was used. The test
+keeps the oracle M0..M5 and gravity and changes only the closing flux:
+`M6_true -> M6_tridelta(M0..M5)`.
 
-`a = 1.08, 1.2, 1.5, 2, 3, 5, 10, 20`.
+The integral-in-space, weak-in-time M5 equation was evaluated on the 101
+`sigma=1` snapshots over `a=0.98..1.08`, using windows 1/4/8/16. Fit and
+held-out intervals are wholly contained in `a<=1.04` and `a>1.04`,
+respectively.
 
-The main calculation uses 65,536 characteristics, 16,384 time steps, a 2,048
-point Eulerian grid, and the established CIC plus periodic Gaussian `sigma=1`.
-The adaptive sheet projection limits every quadrature subsegment to 0.0625
-cell. Tri-delta is reconstructed from M0..M5; M6, M7, and M8 are held out.
+## Audit
 
-## Global result
+- Tri-delta reconstructs its input moments M0..M5 to `8.33e-14` relative error.
+- Active quadrature validity is 99.9995%; condition-number p95 is 5.88.
+- The generalized weak moment implementation reproduces the established weak
+  M3 diagnostic to `2.37e-20` absolute error.
 
-| a | max resolved streams | M6 | M7 | M8 |
-|---:|---:|---:|---:|---:|
-| 1.08 | 3 | 0.83% | 0.25% | 1.69% |
-| 1.2 | 3 | 0.13% | 0.06% | 0.27% |
-| 1.5 | 3 | 0.03% | 0.01% | 0.06% |
-| 2 | 3 | 0.03% | 0.02% | 0.05% |
-| 3 | 5 | 12.74% | 2.30% | 23.38% |
-| 5 | 11 | 24.51% | 9.70% | 45.98% |
-| 10 | 19 | 31.46% | 19.72% | 59.16% |
-| 20 | 65 | 36.89% | 27.95% | 67.38% |
+## M6 and its spatial jump
 
-The transition is controlled by stream complexity rather than scale factor:
-tri-delta is excellent while at most three streams are present and fails
-abruptly when five streams appear at `a=3`.
+| block | M6 global | M6 jump global | M6 dispersive | M6 jump dispersive |
+|---|---:|---:|---:|---:|
+| fit | 0.085% | 0.085% | 1.419% | 1.419% |
+| held-out | 0.123% | 0.123% | 1.358% | 1.358% |
 
-At `a=20`, conditioned errors are:
+The dispersive mask is `S > 1e-4 max_x(S)` per snapshot, matching the earlier
+tri-delta metric. The weak integral itself uses the whole spatial grid. The
+spatial jump does not amplify the closure error: its amplification factor is
+1.000 in every block.
 
-| region | M6 | M7 | M8 |
-|---|---:|---:|---:|
-| multistream bulk | 35.02% | 27.21% | 65.01% |
-| caustics | 41.28% | 35.92% | 72.81% |
-| exterior monostream | <0.001% | <0.001% | <0.001% |
+## Weak M5 on held-out a>1.04
 
-By exact local stream count at `a=20`, M6 errors are 0.003%, 4.67%, 30.09%,
-38.32%, and 41.83% for 1, 3, 5, 7, and 9 streams respectively. This confirms
-that the global late-time failure comes from the multistream hierarchy, not
-from the well-resolved exterior.
+| window | oracle RMS | tri RMS | tri/oracle | closure diff/oracle | oracle/terms | tri/terms | closure diff/terms |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1 | 1.070e-10 | 1.064e-10 | 0.994 | 0.157 | 2.865e-3 | 2.849e-3 | 4.500e-4 |
+| 4 | 4.036e-10 | 4.012e-10 | 0.994 | 0.167 | 2.702e-3 | 2.686e-3 | 4.501e-4 |
+| 8 | 8.031e-10 | 7.985e-10 | 0.994 | 0.167 | 2.688e-3 | 2.673e-3 | 4.493e-4 |
+| 16 | 1.601e-9 | 1.592e-9 | 0.995 | 0.167 | 2.680e-3 | 2.665e-3 | 4.462e-4 |
 
-## Convergence at a=20
-
-The main 65,536/16,384 result was compared with a joint reference using
-131,072 characteristics and 32,768 time steps:
-
-- rho difference: 0.011%; S: 0.002%; Q: 0.009%;
-- M6 and M8 differences: 0.001%;
-- tri-delta on the joint reference: M6 36.89%, M7 27.95%, M8 67.38%;
-- projection order/subdivision error: at most `7.2e-7` over M0..M8.
-
-Stream-count maps differ in only 0.146% of cells. The single central pixel is
-not stream-count converged: it resolves 65 streams in the main calculation and
-87 in the finest reference as nested folds become visible. The stable 1--15
-stream groups already establish the closure failure, so this does not affect
-the conclusion.
+`closure diff/oracle` looks larger because the oracle residual is already the
+small remainder of a strong cancellation. The decisive normalization is
+`closure diff/terms`: replacing M6 adds only about 0.045% of the RSS size of
+the individual equation terms. The normalized weak loss changes by a factor
+0.988--0.989, i.e. it does not increase.
 
 ## Decision
 
-For the current PINN horizon `a=0.98..1.08`, keep tri-delta: only three streams
-occur and M6 remains below 1% at the endpoint. Proceed with the planned
-non-rollout weak hierarchy M0..M5 closed by tri-delta M6.
+The semi-oracle test passes. On `a<=1.08`, tri-delta is accurate enough to
+close M6 in a controlled non-rollout PINN for M0..M5. There is no evidence that
+the spatial jump or weak integration amplifies its held-out M6 error.
 
-Do not treat tri-delta as a universal late-time closure. For `a>=3`, a model
-must increase its effective node count or evolve additional moments. A fixed
-four-delta is not sufficient through `a=20`, where stable 5--15 stream regions
-already exist and the central sheet contains still more nested folds.
+Next, start from a supervised M0..M5 checkpoint and activate the integral/weak
+moment hierarchy with a gradient-balanced PDE weight. Do not force the loss
+below the measured semi-oracle floor, and monitor each moment to detect any
+compensation among M0..M5. This result does not extend tri-delta beyond the
+previously established late-time limit near the transition to five streams.
 
 Detailed artifacts:
-`run/local_diag/late_time_tridelta_sheet_sigma1/REPORT.md` and
-`scripts/diagnose_late_time_tridelta_sheet.py` in the main project.
+`run/local_diag/tridelta_weak_m5_oracle_sigma1_098_108/REPORT.md` and
+`scripts/diagnose_tridelta_weak_m5_oracle.py` in the main project.

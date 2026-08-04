@@ -1,6 +1,6 @@
 # CDM-PIKAN — STATE
 
-Updated: 2026-08-04
+Updated: 2026-08-05
 
 ## Workflow rules
 
@@ -113,6 +113,23 @@ Conclusion: tri-delta is justified for the current `a<=1.08` PINN, but it is
 not universal once more than three streams are present. Late-time work requires
 adaptive node count or more dynamic moments; a fixed four-delta is insufficient
 through `a=20`.
+
+## Tri-delta semi-oracle weak-M5 test
+
+Using true M0..M5 and gravity, only M6 was replaced by the tri-delta
+reconstruction before evaluating the integral-space, weak-time M5 equation.
+
+- Held-out `a>1.04` M6 error: 0.123% globally, 1.358% in the dispersive mask.
+- The M6 spatial jump has the same error; no jump amplification is observed.
+- For windows 1/4/8/16, the added closure defect is 0.0446--0.0450% of the RSS
+  size of the individual equation terms.
+- The total tri-delta weak residual is 0.994--0.995 times the oracle residual;
+  the weak loss is therefore unchanged rather than inflated.
+
+Conclusion: the closure passes the relevant oracle test on `a<=1.08`. Proceed
+to a controlled non-rollout PINN for M0..M5 closed by tri-delta M6, using the
+integral/weak hierarchy and gradient-balanced weights. Monitor compensation
+among the six predicted moments and respect the measured semi-oracle floor.
 
 ## Healthy supervised Run B
 
