@@ -1,63 +1,68 @@
-# REPORT — Semi-oracle tri-delta in the weak M5 equation
+# REPORT — Adaptive N-delta quadratures through M20
 
-Task ID: tridelta-weak-m5-oracle
+Task ID: adaptive-quadrature-m20-sheet
 Status: completed
 
-No KAN, training, rollout, local PDE residual, or Izar job was used. The test
-keeps the oracle M0..M5 and gravity and changes only the closing flux:
-`M6_true -> M6_tridelta(M0..M5)`.
+No KAN, rollout, local PDE residual, or Izar job was used. The converged cold
+sheet was projected with the established CIC plus Gaussian `sigma=1` operator
+to produce M0..M20 at `a=1.08,1.2,1.5,2,3,5,10,20`.
 
-The integral-in-space, weak-in-time M5 equation was evaluated on the 101
-`sigma=1` snapshots over `a=0.98..1.08`, using windows 1/4/8/16. Fit and
-held-out intervals are wholly contained in `a<=1.04` and `a>1.04`,
-respectively.
+Quadratures `Nmax=3,4,5,6,8` were tested. For each N, only M0..M(2N-1) enter
+the reconstruction; M(2N)..M20 are strictly held out. Singular maximum-rank
+inversions fall back locally to a lower rank, which is the fixed-architecture
+limit with zero component weights.
 
-## Audit
+The last dynamic equation, for M(2N-1), was evaluated in integral-space,
+weak-time form after replacing only its closing flux M(2N). A separate dense
+32,768-sheet trajectory with 256 intermediate snapshots was used; a 128-snapshot
+pass provided a temporal convergence check.
 
-- Tri-delta reconstructs its input moments M0..M5 to `8.33e-14` relative error.
-- Active quadrature validity is 99.9995%; condition-number p95 is 5.88.
-- The generalized weak moment implementation reproduces the established weak
-  M3 diagnostic to `2.37e-20` absolute error.
+## Held-out moments at each endpoint
 
-## M6 and its spatial jump
+| horizon | Nmax | first held-out | its error | worst error through M20 | weak closure defect / terms |
+|---:|---:|---:|---:|---:|---:|
+| 5 | 3 | M6 | 24.51% | 83.35% | 2.71% |
+| 5 | 4 | M8 | 5.37% | 41.48% | 0.09% |
+| 5 | 5 | M10 | 0.21% | 2.00% | 0.0006% |
+| 5 | 6 | M12 | 0.002% | 0.02% | 0.08% |
+| 10 | 5 | M10 | 2.14% | 22.68% | 0.0007% |
+| 10 | 6 | M12 | 0.19% | 2.06% | 0.08% |
+| 20 | 5 | M10 | 4.25% | 43.98% | 0.0007% |
+| 20 | 6 | M12 | 0.79% | 9.65% | 0.08% |
+| 20 | 8 | M16 | 0.65% | 8.04% | catastrophic |
 
-| block | M6 global | M6 jump global | M6 dispersive | M6 jump dispersive |
-|---|---:|---:|---:|---:|
-| fit | 0.085% | 0.085% | 1.419% | 1.419% |
-| held-out | 0.123% | 0.123% | 1.358% | 1.358% |
+## Weak comparison through a=20
 
-The dispersive mask is `S > 1e-4 max_x(S)` per snapshot, matching the earlier
-tri-delta metric. The weak integral itself uses the whole spatial grid. The
-spatial jump does not amplify the closure error: its amplification factor is
-1.000 in every block.
+| Nmax | last equation | oracle / term RSS | closed / term RSS | added closure defect / term RSS |
+|---:|---:|---:|---:|---:|
+| 3 | M5 | 5.93% | 5.55% | 2.88% |
+| 4 | M7 | 0.80% | 0.77% | 0.10% |
+| 5 | M9 | 2.29% | 2.29% | 0.0007% |
+| 6 | M11 | 3.60% | 3.60% | 0.08% |
+| 8 | M15 | 4.60% | 5.57e6% | 5.57e6% |
 
-## Weak M5 on held-out a>1.04
-
-| window | oracle RMS | tri RMS | tri/oracle | closure diff/oracle | oracle/terms | tri/terms | closure diff/terms |
-|---:|---:|---:|---:|---:|---:|---:|---:|
-| 1 | 1.070e-10 | 1.064e-10 | 0.994 | 0.157 | 2.865e-3 | 2.849e-3 | 4.500e-4 |
-| 4 | 4.036e-10 | 4.012e-10 | 0.994 | 0.167 | 2.702e-3 | 2.686e-3 | 4.501e-4 |
-| 8 | 8.031e-10 | 7.985e-10 | 0.994 | 0.167 | 2.688e-3 | 2.673e-3 | 4.493e-4 |
-| 16 | 1.601e-9 | 1.592e-9 | 0.995 | 0.167 | 2.680e-3 | 2.665e-3 | 4.462e-4 |
-
-`closure diff/oracle` looks larger because the oracle residual is already the
-small remainder of a strong cancellation. The decisive normalization is
-`closure diff/terms`: replacing M6 adds only about 0.045% of the RSS size of
-the individual equation terms. The normalized weak loss changes by a factor
-0.988--0.989, i.e. it does not increase.
+For N=6 the added weak defect decreased from 0.389% with 128 snapshots to
+0.0768% with 256; N=5 stayed near 0.0007%. N=8 remains unstable: near the cold
+limit, a nearly zero weight paired with an extreme velocity fits lower moments
+but explodes M16. More nodes are therefore not monotonically safer without a
+realizability/conditioning regularizer.
 
 ## Decision
 
-The semi-oracle test passes. On `a<=1.08`, tri-delta is accurate enough to
-close M6 in a controlled non-rollout PINN for M0..M5. There is no evidence that
-the spatial jump or weak integration amplifies its held-out M6 error.
+Two criteria must not be confused:
 
-Next, start from a supervised M0..M5 checkpoint and activate the integral/weak
-moment hierarchy with a gradient-balanced PDE weight. Do not force the loss
-below the measured semi-oracle floor, and monitor each moment to detect any
-compensation among M0..M5. This result does not extend tri-delta beyond the
-previously established late-time limit near the transition to five streams.
+- For the PINN hierarchy, only the first closing flux M(2N) and its weak effect
+  are required. With a 5% flux threshold and 1% weak-defect threshold, the
+  smallest candidate is `Nmax=5` through `a=5`, `10`, and `20`.
+- To reproduce the whole velocity distribution through M20, use `Nmax=5` to
+  `a=5`, `Nmax=6` to `a=10`, and none of the tested reconstructions at `a=20`.
+
+Thus a physics-only non-rollout PINN intended through `a<=5` should evolve
+M0..M9 and close M10 with an adaptive five-node representation. Keep hard ICs,
+periodic boundaries, log-rho/asinh transforms, and integral weak equations only.
+Do not start with N=8. For the current `a<=1.08` model, tri-delta M0..M5 remains
+the smaller justified system.
 
 Detailed artifacts:
-`run/local_diag/tridelta_weak_m5_oracle_sigma1_098_108/REPORT.md` and
-`scripts/diagnose_tridelta_weak_m5_oracle.py` in the main project.
+`run/local_diag/adaptive_quadrature_m20_sheet_sigma1/REPORT.md` and
+`scripts/diagnose_adaptive_quadrature_m20_sheet.py` in the main project.

@@ -131,6 +131,27 @@ to a controlled non-rollout PINN for M0..M5 closed by tri-delta M6, using the
 integral/weak hierarchy and gradient-balanced weights. Monitor compensation
 among the six predicted moments and respect the measured semi-oracle floor.
 
+## Adaptive N-delta diagnostic through M20
+
+The converged cold sheet was projected to M0..M20 at late times and fixed
+architectures with local effective rank were tested for Nmax=3,4,5,6,8.
+
+- For the first held-out closing flux and its last weak equation, Nmax=5 is the
+  smallest candidate meeting 5% moment and 1% weak-defect tolerances through
+  a=5, 10, and 20.
+- At a=20, N=5 predicts M10 to 4.25%; substituting it in weak M9 adds only
+  0.0007% of the individual-term RSS, leaving the 2.29% oracle floor unchanged.
+- Strong distribution fidelity through M20 needs N=5 to a=5, N=6 to a=10,
+  and is not achieved by any tested case at a=20.
+- N=8 is numerically unsafe near the cold limit: a tiny weight at an extreme
+  node explodes M16 and weak M15 despite good static endpoint errors.
+
+Recommendation: retain tri-delta M0..M5 for the current a<=1.08 PINN. For a
+future physics-only model through a<=5, evolve M0..M9 and close M10 with an
+adaptive five-node representation. Hardcode ICs/periodicity, keep log-rho and
+asinh transforms, and use only integral/weak moment equations; do not use a
+fixed unregularized N=8 closure.
+
 ## Healthy supervised Run B
 
 Reference run:
