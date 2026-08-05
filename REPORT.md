@@ -1,61 +1,71 @@
-# REPORT — Convergence ciblée des résidus weak M2/M3
+# REPORT — Audit indépendant des coefficients weak M2
 
-Task ID: m2-m3-convergence-audit  
+Task ID: m2-coefficients-vlasov-sheet  
 Status: completed — aucun entraînement ni job Izar lancé.
 
-## Méthode
+## Dérivation indépendante
 
-Le diagnostic oracle réutilise exactement la forme intégrale weak du projet :
-primitives spatiales, sauts de flux et intégration en temps. Aucun résidu PDE
-local ni dérivée spatiale n'est introduit. Les snapshots N-body sont filtrés
-par CIC + gaussien et les intervalles évalués sont held-out (`a>1.04`, deux
-extrémités dans le bloc).
+Les conventions de l’intégrateur C++ sont :
 
-Variations : `n_grid=1024,2048,4096`, sigma gaussien `0.5,1,2` cellules,
-101 snapshots (`a=0.98..1.08`) puis strides temporels `1,2,4`; fenêtres
-complètes `1,2,4,8,16` et fenêtres à span approximativement égal après
-sous-échantillonnage.
+`u=dx/da=a^(-3/2)v`, `dv/da=(3/2)a^(-1/2)g`,
+`g=(x-x_min)-M(x)`.
 
-## Résultat canonique
+Donc :
 
-`n_grid=2048`, sigma=1 cellule, fenêtre 4, held-out :
+`u_a=(3/2)a^(-2)g-(3/2)a^(-1)u`.
 
-| équation | résidu RMS / RSS des termes | résidu RMS | RSS termes |
-|---|---:|---:|---:|
-| M2 | **6.538 %** | 7.904e-6 | 1.209e-4 |
-| M3 | **0.461 %** | 2.121e-8 | 4.600e-6 |
+Pour `M_n=∫u^n f du`, Vlasov donne :
 
-## Robustesse
+`∂a M_n + ∂x M_(n+1) + (3n/(2a))M_n - (3n/(2a²))g M_(n-1)=0`.
 
-- M2 sur le scan résolution/filtre, fenêtre 4 : **6.519–6.590 %**.
-- M3 sur le même scan : **0.386–0.801 %** (la variation est faible en valeur
-  absolue et reste très inférieure à M2).
-- À `2048, sigma=1`, fenêtres 1/4/8/16 : M2 = **6.566/6.538/6.503/6.448 %**;
-  M3 = **0.492/0.461/0.452/0.440 %**.
-- Sous-échantillonnage avec fenêtre physique approximativement conservée
-  (stride 1/2/4, fenêtre de base 1) : M2 = **6.566/6.607/6.660 %**;
-  M3 = **0.492/0.466/0.453 %**.
-- Pour le span de base 4 (strides 1/2, fenêtres effectives 4/8) : M2 =
-  **6.538/6.519 %**, M3 = **0.461/0.445 %**. Les fenêtres plus longues n'ont
-  pas assez d'intervalles held-out au stride 4 pour une comparaison honnête.
+Avec le préfacteur du dépôt `(3/2)a²`, les coefficients locaux sont `9n/4`.
+Après intégration temporelle de `(3/2)a² ∂a K_n`, les coefficients weak sont :
 
-## Conclusion
+`expansion = (9n/4 - 3) ∫aK_n da`, `gravity = -(9n/4)∫G_n da`.
 
-Le contraste M2/M3 est stable à quelques dixièmes de point malgré les quatre
-variations demandées. Il ne s'agit donc pas d'un simple artefact de résolution,
-de la largeur du filtre, du nombre de snapshots ou d'une fenêtre particulière.
-Cela justifie de traiter M2 comme le verrou dominant de la hiérarchie coarse-
-grainée/intégrale actuelle, tandis que M3 est proche de son plancher oracle.
+La hiérarchie actuelle utilise `expansion=(n-3)∫aK_n` et `gravity=-n∫G_n`.
 
-Ce test **ne suffit pas** à appeler l'écart « nouvelle physique » : sigma est
-paramétré en cellules (son échelle physique change avec `n_grid`) et l'audit
-reste fondé sur le même N-body et le même opérateur de coarse-graining. Une
-comparaison à filtre physique fixé et, idéalement, à une feuille continue reste
-le contrôle final.
+| équation | actuelle | dérivée |
+|---|---|---|
+| M2 | -1 ; -2 | +1.5 ; -4.5 |
+| M3 | 0 ; -3 | +3.75 ; -6.75 |
+
+## Test N-body / feuille continue
+
+Les deux jeux de moments sont projetés sur la même grille et avec le même CIC
+plus filtre gaussien sigma=1. Les résidus sont intégrés en espace et weak en
+temps, sans dérivée spatiale locale.
+
+Held-out `a>1.04`, fenêtre 4 :
+
+| source | équation | coefficients actuels | coefficients dérivés |
+|---|---|---:|---:|
+| N-body CIC | M1 | 1.145 % | 0.653 % |
+| N-body CIC | M2 | **6.550 %** | **0.0725 %** |
+| N-body CIC | M3 | 0.450 % | 0.286 % |
+| feuille continue | M1 | 1.143 % | 0.651 % |
+| feuille continue | M2 | **6.550 %** | **0.0720 %** |
+| feuille continue | M3 | 0.447 % | 0.285 % |
+
+Pour la feuille continue, le coefficient dérivé donne pour M2
+`0.076/0.072/0.068/0.065 %` sur les fenêtres 1/4/8/16. Le N-body donne les
+mêmes valeurs à l’écart de dépôt près.
+
+## Décision
+
+Le défaut M2 à 6,5 % n’est ni un artefact de macroparticules, ni un problème de
+résolution de la feuille, ni un simple effet du filtre. Il vient de la
+normalisation des termes source dans l’implémentation weak actuelle : les
+coefficients `n` doivent être remplacés par `9n/4` lorsque le résidu conserve
+le préfacteur `(3/2)a²`.
+
+Le résultat est suffisamment net pour corriger la hiérarchie avant le PINN.
+Il faut ensuite régénérer les échelles de loss et refaire l’audit M0–M9 avec ces
+coefficients. Aucun entraînement ne doit être lancé avec l’ancienne forme.
 
 ## Artefacts
 
-- `run/local_diag/m2_m3_convergence_a098_108/REPORT.md`
-- `run/local_diag/m2_m3_convergence_a098_108/m2_m3_convergence.csv`
-- `run/local_diag/m2_m3_convergence_a098_108/config.json`
-- `scripts/diagnose_m2_m3_convergence.py`
+- `run/local_diag/m2_derivation_and_sheet_a098_108/REPORT.md`
+- `run/local_diag/m2_derivation_and_sheet_a098_108/m2_m3_derivation.csv`
+- `run/local_diag/m2_derivation_and_sheet_a098_108/derivation.json`
+- `scripts/diagnose_m2_derivation_and_sheet.py`

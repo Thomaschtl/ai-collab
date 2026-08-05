@@ -306,3 +306,10 @@ Do not extend lr=3e-6 before inspecting 3099914.
 - Held-out M2 remains 6.52–6.66%; M3 remains 0.39–0.80%. The canonical 2048/sigma1/window4 values are 6.538% and 0.461%.
 - Interpretation: M2 is a stable dominant integral/coarse-grained bottleneck, not a single-resolution/window artifact. This is not yet proof of new physics because the same N-body/coarse-graining operator is used and sigma is specified in grid cells.
 - Artifacts: `run/local_diag/m2_m3_convergence_a098_108/`.
+
+2026-08-06 — Independent M2 coefficient and continuous-sheet control completed.
+
+- From the C++ characteristics, `u=dx/da=a^(-3/2)v` and `dv/da=(3/2)a^(-1/2)g`, yielding source coefficients `9n/4` when the weak residual keeps prefactor `(3/2)a^2`.
+- The current `n` coefficients give M2=6.55% held-out, while the derived coefficients give M2=0.0725% on N-body CIC and 0.0720% on the continuously evolved sheet with identical CIC+Gaussian projection.
+- Therefore the 6.5% M2 floor is an implementation normalization error, not a particle-resolution effect. Correct the weak hierarchy and regenerate M0–M9 scales before any PINN training.
+- Artifacts: `run/local_diag/m2_derivation_and_sheet_a098_108/`; diagnostic `scripts/diagnose_m2_derivation_and_sheet.py`.
