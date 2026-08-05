@@ -152,6 +152,25 @@ adaptive five-node representation. Hardcode ICs/periodicity, keep log-rho and
 asinh transforms, and use only integral/weak moment equations; do not use a
 fixed unregularized N=8 closure.
 
+## Weak hierarchy audit and trainer
+
+Held-out oracle weak residual floors for M0..M9 are respectively
+0.303%, 1.241%, 6.566%, 0.492%, 2.230%, 0.278%, 0.693%, 0.248%, 0.231%, and
+0.234% of term RSS. Float32-vs-float64 gaps are only 3.4e-5 at worst, so M2's
+6.566% is a physical/coarse-graining floor rather than roundoff.
+
+Direct five-node inversion of perturbed M0..M9 is not realizable: valid active
+fractions are only 1.85% at 1e-5 perturbations and 1.41% at 1e-4, with complex
+roots and extreme standardized nodes. The trainer therefore predicts rho,
+five softmax weights, and five bounded velocities directly, then forms M0..M10
+by quadrature. This preserves positivity and realizability by construction.
+
+`scripts/train_postshell_weak_hierarchy_kan.py` passed a local two-step sanity
+run, including weak loss and checkpoint writes. It uses hard Zel'dovich ICs,
+periodic features, log-rho, tanh(asinh) bounded node offsets, and weak integral
+equations M0..M9 only. The Slurm wrapper is
+`run_postshell_weak_hierarchy_izar.slurm`; no job has been submitted.
+
 ## Healthy supervised Run B
 
 Reference run:
