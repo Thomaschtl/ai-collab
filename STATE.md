@@ -299,3 +299,10 @@ Success requires:
 If 3099913 is stable, propose a continuation to 1500–3000 steps.
 
 Do not extend lr=3e-6 before inspecting 3099914.
+2026-08-06 — M2/M3 convergence audit completed.
+
+- Added `scripts/diagnose_m2_m3_convergence.py` and ran it locally, without Izar.
+- Scanned n_grid=1024/2048/4096, Gaussian sigma=0.5/1/2 grid cells, snapshot strides 1/2/4, and weak windows 1/2/4/8/16 (matched spans where available).
+- Held-out M2 remains 6.52–6.66%; M3 remains 0.39–0.80%. The canonical 2048/sigma1/window4 values are 6.538% and 0.461%.
+- Interpretation: M2 is a stable dominant integral/coarse-grained bottleneck, not a single-resolution/window artifact. This is not yet proof of new physics because the same N-body/coarse-graining operator is used and sigma is specified in grid cells.
+- Artifacts: `run/local_diag/m2_m3_convergence_a098_108/`.
