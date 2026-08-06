@@ -313,3 +313,10 @@ Do not extend lr=3e-6 before inspecting 3099914.
 - The current `n` coefficients give M2=6.55% held-out, while the derived coefficients give M2=0.0725% on N-body CIC and 0.0720% on the continuously evolved sheet with identical CIC+Gaussian projection.
 - Therefore the 6.5% M2 floor is an implementation normalization error, not a particle-resolution effect. Correct the weak hierarchy and regenerate M0–M9 scales before any PINN training.
 - Artifacts: `run/local_diag/m2_derivation_and_sheet_a098_108/`; diagnostic `scripts/diagnose_m2_derivation_and_sheet.py`.
+
+2026-08-06 — Gravity covariance substitution completed.
+
+- Projected fine-sheet `g*u` with the same CIC+Gaussian operator and compared it to `gbar*M1bar`.
+- `tau_g1` is 4.95% of the filtered gravity product (0.085% absolute held-out RMS).
+- Substitution changes current M2 only from 6.550% to 6.515%; with corrected coefficients it changes 0.072% to 0.038%. It is not the source of the old 6.5% floor.
+- Artifacts: `run/local_diag/m2_gravity_covariance_a098_108/`; diagnostic `scripts/diagnose_m2_gravity_covariance.py`.
