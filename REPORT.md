@@ -1,70 +1,64 @@
-# REPORT — Coefficients weak M2 et covariance gravitationnelle
+# REPORT — Correction weak M1–M9 et impact pré-shell
 
-Task ID: m2-coefficients-and-gravity-covariance  
-Status: completed — aucun entraînement ni job Izar lancé.
+Task ID: correct-weak-hierarchy-before-pinn  
+Status: completed locally — aucun entraînement ni job Izar lancé.
 
-## 1. Coefficients indépendants
+## Correction appliquée
 
-L’intégrateur C++ définit `u=dx/da=a^(-3/2)v` et
-`dv/da=(3/2)a^(-1/2)g`. Donc :
+Depuis les conventions C++ `u=dx/da=a^(-3/2)v` et
+`dv/da=(3/2)a^(-1/2)g`, les coefficients corrects avec le préfacteur
+`(3/2)a²` sont :
 
-`u_a=(3/2)a^(-2)g-(3/2)a^(-1)u`.
+`expansion = 9n/4 - 3`, `gravity = -9n/4`.
 
-La hiérarchie de moments est alors
+Ils remplacent `n-3` et `-n` dans :
 
-`∂a M_n + ∂x M_(n+1) + (3n/(2a))M_n - (3n/(2a²))gM_(n-1)=0`.
+- `scripts/diagnose_adaptive_quadrature_m20_sheet.py` ;
+- `scripts/diagnose_moment_hierarchy_m0_m9.py` via le helper partagé ;
+- `scripts/train_postshell_weak_hierarchy_kan.py` ;
+- `scripts/diagnose_tridelta_weak_m5_oracle.py` ;
+- le résidu momentum intégral/local actif de `scripts/train_dm1d_euler_integral.py` ;
+- le diagnostic exact pré-shell.
 
-Avec le préfacteur weak `(3/2)a²`, les coefficients source sont `9n/4`, et
-après intégration temporelle : `expansion=9n/4-3`, `gravity=-9n/4`.
+Le sanity KAN corrigé (2 pas, cinq nœuds, faible grille) reste fini, avec
+poids positifs et nœuds bornés.
 
-La forme actuelle utilise `expansion=n-3`, `gravity=-n`.
+## Audit oracle corrigé M0–M9
 
-Held-out, fenêtre 4 :
+Held-out `a>1.04`, fenêtre 4 :
 
-| source | équation | actuelle | coefficients dérivés |
-|---|---|---:|---:|
-| N-body CIC | M2 | 6.550 % | 0.0725 % |
-| feuille continue | M2 | 6.550 % | 0.0720 % |
-| N-body CIC | M3 | 0.450 % | 0.286 % |
-| feuille continue | M3 | 0.447 % | 0.285 % |
+| équation | résidu/RSS |
+|---|---:|
+| M0 | 0.257 % |
+| M1 | 0.644 % |
+| M2 | **0.057 %** |
+| M3 | 0.269 % |
+| M4 | 0.046 % |
+| M5 | 0.237 % |
+| M6 | 0.033 % |
+| M7 | 0.222 % |
+| M8 | 0.023 % |
+| M9 | 0.214 % |
 
-La feuille continue, projetée avec le même CIC+filtre, reproduit le N-body.
-Le défaut 6,5 % est donc une erreur de normalisation de l’implémentation weak,
-pas un effet de macroparticules.
+Le scan résolution/filtre/cadence donne maintenant M2 sous 0,2 % partout,
+contre 6,5 % avant correction. Les nouvelles échelles sont dans
+`equation_scales.json`.
 
-## 2. Test de covariance gravitationnelle
+## Le plafond pré-shell 48,8/50
 
-Sur la feuille fine `N=65536`, j’ai calculé `g*u` avant projection, puis :
+Le test Zel’dovich exact montre que, avant shell crossing, `force ≈ a Pi`.
+Les deux normalisations annulent donc presque pareil les termes source sur la
+solution exacte. La correction est indispensable pour la cohérence générale,
+mais elle n’explique probablement pas seule le plafond 48,8/50. Elle peut
+toutefois modifier le paysage de gradient autour d’une solution imparfaite.
 
-`tau_g1 = overline(g M1) - gbar M1bar`.
-
-La covariance a une amplitude de 4,95 % du produit gravitationnel filtré,
-soit 0,085 % en RMS absolu sur le held-out.
-
-| gravité dans M2 | forme | résidu/RSS held-out, fenêtre 4 |
-|---|---|---:|
-| `gbar M1bar` | actuelle | 6.550 % |
-| `overline(g M1)` | actuelle | 6.515 % |
-| `gbar M1bar` | dérivée | 0.072 % |
-| `overline(g M1)` | dérivée | 0.038 % |
-
-La covariance ne réduit donc pas le verrou 6,5 % vers 0,5 %. Elle est une
-correction secondaire, à inclure éventuellement après la correction principale
-des coefficients.
-
-## Décision
-
-1. Corriger d’abord les coefficients weak `9n/4` dans M1–M9.
-2. Régénérer les échelles de loss et refaire l’audit oracle M0–M9.
-3. Garder `tau_g1` comme terme de coarse-graining optionnel seulement si la
-   feuille continue montre un gain utile après cette correction.
-4. Ne lancer aucun PINN avec l’ancienne hiérarchie.
+Le plafond pré-shell doit donc aussi être attribué à la résolution/localisation
+du pic et à l’optimisation KAN, après un nouveau contrôle avec la correction.
 
 ## Artefacts
 
-- `run/local_diag/m2_derivation_and_sheet_a098_108/REPORT.md`
-- `run/local_diag/m2_gravity_covariance_a098_108/REPORT.md`
-- `run/local_diag/m2_gravity_covariance_a098_108/gravity_covariance_residuals.csv`
-- `run/local_diag/m2_gravity_covariance_a098_108/gravity_products.npz`
-- `scripts/diagnose_m2_derivation_and_sheet.py`
-- `scripts/diagnose_m2_gravity_covariance.py`
+- `run/local_diag/moment_hierarchy_m0_m9_a098_108/REPORT.md`
+- `run/local_diag/moment_hierarchy_m0_m9_a098_108/equation_scales.json`
+- `run/local_diag/m2_m3_convergence_a098_108/REPORT.md`
+- `run/local_diag/preshell_momentum_coefficients/REPORT.md`
+- `scripts/diagnose_preshell_momentum_coefficients.py`

@@ -320,3 +320,11 @@ Do not extend lr=3e-6 before inspecting 3099914.
 - `tau_g1` is 4.95% of the filtered gravity product (0.085% absolute held-out RMS).
 - Substitution changes current M2 only from 6.550% to 6.515%; with corrected coefficients it changes 0.072% to 0.038%. It is not the source of the old 6.5% floor.
 - Artifacts: `run/local_diag/m2_gravity_covariance_a098_108/`; diagnostic `scripts/diagnose_m2_gravity_covariance.py`.
+
+2026-08-06 — Corrected weak M1–M9 implementation and regenerated audit.
+
+- Replaced `n-3,-n` by `9n/4-3,-9n/4` in the hierarchy helper, post-shell five-node PINN, tri-delta audit, and active integrated/local momentum paths of the Euler trainer.
+- Regenerated `equation_scales.json` and reran M0–M9. Held-out window-4 M2 is now 0.057% (previously 6.55%); all equations are below 0.65% except M1 at 0.64%.
+- Ran exact pre-shell Zel'dovich integrated M1 control. Both old and corrected forms are near the exact floor because force≈a Pi before shell crossing; the 48.8/50 KAN ceiling is therefore not explained by this coefficient error alone.
+- Sanity KAN run with corrected hierarchy is finite and realizable.
+- Artifacts: `run/local_diag/moment_hierarchy_m0_m9_a098_108/`, `run/local_diag/preshell_momentum_coefficients/`.
