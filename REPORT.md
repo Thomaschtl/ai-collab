@@ -62,3 +62,41 @@ du pic et à l’optimisation KAN, après un nouveau contrôle avec la correctio
 - `run/local_diag/m2_m3_convergence_a098_108/REPORT.md`
 - `run/local_diag/preshell_momentum_coefficients/REPORT.md`
 - `scripts/diagnose_preshell_momentum_coefficients.py`
+
+## Audit oracle décisif weak M0–M9 — 12 août 2026
+
+L’audit a réutilisé l’opérateur partagé `fivedelta_ablation_core` et les
+échelles physiques fixes des fenêtres 1/4/8/16. Aucun entraînement n’a été
+utilisé pour produire ces résultats.
+
+- Loss weak globale oracle : `5.4843e-6` (plancher numérique/coarse-graining).
+- Checkpoint data-only 3106390, meilleur état : `5.2851e-3`, reproduit à
+  `4e-8` près. La valeur rapportée à l’update 0 (`0.308943`) est conservée
+  comme métadonnée du run, car le champ de cet update n’a pas été rapatrié.
+- Le plancher M0 est dominé par la discrétisation : RMS normalisé moyen
+  `0.00201` sur la grille complète, `0.0301` à résolution spatiale /2 et
+  `0.999` à /4. La cadence temporelle /2 ne crée qu’une petite hausse
+  (`0.00332`). Il faut donc conserver la grille fine pour l’audit de loss.
+- La fermeture cinq-delta oracle (M0–M9 → M10) donne une erreur M10 de
+  `2.94e-4` et n’ajoute qu’environ `2.1e-15` RMS au résidu M9 : M10 n’est pas
+  le verrou principal de ce test.
+- Sur la feuille continue filtrée identiquement, la covariance exacte
+  `overline(g M1)` − `g_bar M1_bar` vaut `4.95%` RMS du produit de force
+  (5.4% sur l’intervalle held-out). Dans l’équation M2, remplacer le produit
+  factorisé par le produit filtré réduit le défaut relatif de ~`4.7%` à
+  ~`0.14%` (fenêtre 1 post-shell), et jusqu’à `0.09%` pour fenêtre 16.
+  C’est une correction physique/coarse-graining importante, pas un simple
+  réglage d’optimiseur.
+- Le spectre JVP calculé est explicitement un diagnostic en espace des
+  moments (condition ~`2.87`), pas une preuve d’unicité du réseau. Les
+  perturbations de paramètres et les distances entre plusieurs solutions
+  restent non disponibles localement.
+
+Artefacts détaillés :
+`run/local_diag/decisive_weak_oracle_audit_3106390/` (tables par équation et
+fenêtre, convergence M0, fermeture M9, spectre et rapport).
+
+Le premier relancement demandé (`3106471`) a atteint l’initialisation mais a
+échoué avant l’update 0 sur une erreur cuFFT d’allocation GPU. La même
+configuration corrigée a été relancée avec allocation GPU non préallouée et
+fraction mémoire limitée : job `3106473`; il ne faut pas l’interrompre.
