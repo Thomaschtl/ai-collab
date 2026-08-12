@@ -100,3 +100,28 @@ Le premier relancement demandé (`3106471`) a atteint l’initialisation mais a
 échoué avant l’update 0 sur une erreur cuFFT d’allocation GPU. La même
 configuration corrigée a été relancée avec allocation GPU non préallouée et
 fraction mémoire limitée : job `3106473`; il ne faut pas l’interrompre.
+
+## Audit conditionnement cinq-delta — 12 août 2026
+
+Le diagnostic `run/local_diag/fivedelta_hyperbolicity_audit_3106390/` teste la
+matrice standard `A = d(M1,...,M10)/d(M0,...,M9)`, son inverse quand elle existe,
+les Hankel 5×5, la sensibilité de M10 et les limites de dégénérescence.
+
+- QMOM est réalisable sur seulement ~26.6 % des cellules oracle échantillonnées
+  et ~52.7 % du checkpoint 3106390 avec les dix moments bruts. Les cellules
+  restantes sont trop proches d’une distribution monostream, d’un poids nul ou
+  d’une collision de nœuds pour une inversion cinq-delta stable.
+- Dans les limites contrôlées, le conditionnement se dégrade brutalement :
+  `theta=1` donne `cond(H)≈1.8e3` et `cond(J)≈1.1e10`; à
+  `theta=1e-3`, l’inversion du Jacobien devient singulière ; poids nul ou nœuds
+  fusionnés sont également singuliers. C’est une vraie déficience de la
+  coordonnée des moments, pas un simple problème Adam.
+- Les perturbations de M0…M9 produisent donc souvent un M10 non réalisable ; la
+  sensibilité est fortement localisée dans les cellules où la variance ou un
+  poids s’effondre. Le modèle doit masquer/fallback ces cellules ou changer de
+  coordonnées (poids/nœuds directs, HyQMOM/EQMOM), plutôt que demander une
+  inversion brute partout.
+- HyQMOM à 11 moments et Gaussian-EQMOM ne sont pas implémentés dans le dépôt ;
+  aucune comparaison numérique ne doit être inventée. Le prochain test sans
+  entraînement serait leur implémentation minimale puis la comparaison sur le
+  même masque réalisable.
