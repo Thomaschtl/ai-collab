@@ -52,3 +52,11 @@ checkpoints without JAX reconstruction.
 Run the existing Global-T51 A/B/C ablation for 500 steps with the instrumented
 trainer; inspect the JSON files at steps 1, 50, 100, and 500 before changing
 any curriculum or objective.
+
+## Temporal-wiggle guardrail
+
+No training method was launched or added. The external cancellation audit now
+reports TV_a(u), TV_a(j), zero crossings of u, temporal extrema, and peak-to-
+peak amplitudes, in addition to residuals. Phase-shift and P0/P1/P2 Legendre
+checks remain evaluation-only gates: do not enable random shifts, Galerkin
+modes, or a strong-in-time auxiliary loss before the fixed multiscale result.
