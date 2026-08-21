@@ -45,6 +45,25 @@ It writes 405 strata each for ZA, B2-7k and C500:
   numerical precision (n=1), and \(3.53\times10^{-6}\) (n=2). The previous
   0.289/0.972/0.567 anomaly is eliminated.
 
+## W=.5dx P0 regression (3111394, valid)
+
+All 285 frozen T51 half-cell boxes were compared term-by-term on ZA.
+The legacy independent GL8 rule, the former trainer rule, the corrected
+trainer rule, and an independently evaluated P0-Legendre rule were used.
+
+- The former trainer support was \([-0.465,+0.215]\Delta x\) with total
+  quadrature weight \(\Delta x\), while its faces/volume declared
+  \([-.25,+.25]\Delta x\) and \(.5\Delta x\).
+- Its maximum discrepancy from the legacy rule is 2.086e-3 in \(T_{\Delta M}\),
+  producing 0.306 in normalized r. Flux, drag, gravity and volume agree.
+- Corrected trainer vs legacy differs by at most 9.80e-9 in \(T_{\Delta M}\)
+  (3.11e-6 in r), as expected from GL4-split versus GL8 quadrature.
+- Corrected trainer vs P0-Legendre is exactly equal (zero to stored precision)
+  for every reported term \(T_{\Delta M},T_{flux},T_{drag},T_{grav},R,D,r,V\).
+
+The regression is therefore understood and fixed; w05 was not silently
+removed. Artifact: `run/local_diag/w05_operator_regression.json`.
+
 Conclusion: the corrected baseline passes. P1/P2 retain strong calibrated
 excess over ZA, so the Legendre validation gate is now satisfied. A training
 submission still requires explicit user confirmation.
