@@ -1,127 +1,54 @@
-# REPORT — Correction weak M1–M9 et impact pré-shell
+# REPORT — Audit Mean/L4/CVaR Global-T51
 
-Task ID: correct-weak-hierarchy-before-pinn  
-Status: completed locally — aucun entraînement ni job Izar lancé.
+Task ID: audit-global-t51-objective-identity  
+Status: instrumentation complete locally; no training or Izar job launched.
 
-## Correction appliquée
+## Finding from existing checkpoints
 
-Depuis les conventions C++ `u=dx/da=a^(-3/2)v` et
-`dv/da=(3/2)a^(-1/2)g`, les coefficients corrects avec le préfacteur
-`(3/2)a²` sont :
+The A/B/C files are byte-distinct and their parameters are not identical:
 
-`expansion = 9n/4 - 3`, `gravity = -9n/4`.
+| step | pair | ||dtheta|| | max abs diff | cos(theta) |
+|---:|:---:|---:|---:|---:|
+| 50 | A-B | 2.046e-5 | 8.617e-7 | 0.990573 |
+| 50 | A-C | 6.328e-5 | 1.710e-6 | 0.910198 |
+| 50 | B-C | 6.371e-5 | 1.381e-6 | 0.909080 |
+| 100 | A-C | 8.994e-7 | 7.703e-7 | 0.999987 |
+| 500 | A-C | 8.235e-8 | 8.235e-8 | 0.999999917 |
 
-Ils remplacent `n-3` et `-n` dans :
+Thus field equality cannot be attributed to equal checkpoint bytes. Differences
+collapse strongly after step 50, but no gradient conclusion is valid yet.
 
-- `scripts/diagnose_adaptive_quadrature_m20_sheet.py` ;
-- `scripts/diagnose_moment_hierarchy_m0_m9.py` via le helper partagé ;
-- `scripts/train_postshell_weak_hierarchy_kan.py` ;
-- `scripts/diagnose_tridelta_weak_m5_oracle.py` ;
-- le résidu momentum intégral/local actif de `scripts/train_dm1d_euler_integral.py` ;
-- le diagnostic exact pré-shell.
+## Correction and deterministic audit added
 
-Le sanity KAN corrigé (2 pas, cinq nœuds, faible grille) reste fini, avec
-poids positifs et nœuds bornés.
+`train_ablation_global_t51_objectives.py` previously logged the loss/fields
+before Adam while writing theta after Adam. This invalidated direct association
+between a checkpoint and its recorded loss. It now re-evaluates each saved
+checkpoint on the exact same frozen T51 boxes.
 
-## Audit oracle corrigé M0–M9
+For every saved step, the trainer now writes
+`models/audit_ablation_obj_<A|B|C>_step_<N>.json` with:
 
-Held-out `a>1.04`, fenêtre 4 :
+- all A/B/C gradient norms, pairwise cosines and norm ratios at the same theta;
+- SHA256 of parameters and optimizer state;
+- one common-state Adam update per objective, its 3x3 loss matrix, directional
+  derivative, update cosines, and ||Delta rho||, ||Delta u||, ||Delta j||;
+- distributions of R, D, and |R|/D by (n,W,Delta-a), including requested tail
+  fractions and quantiles.
 
-| équation | résidu/RSS |
-|---|---:|
-| M0 | 0.257 % |
-| M1 | 0.644 % |
-| M2 | **0.057 %** |
-| M3 | 0.269 % |
-| M4 | 0.046 % |
-| M5 | 0.237 % |
-| M6 | 0.033 % |
-| M7 | 0.222 % |
-| M8 | 0.023 % |
-| M9 | 0.214 % |
+`scripts/audit_global_t51_checkpoint_parameters.py` prints SHA256, pairwise
+parameter distances, cosine, and per-leaf max difference for pre-existing
+checkpoints without JAX reconstruction.
 
-Le scan résolution/filtre/cadence donne maintenant M2 sous 0,2 % partout,
-contre 6,5 % avant correction. Les nouvelles échelles sont dans
-`equation_scales.json`.
+## Verification
 
-## Le plafond pré-shell 48,8/50
+- Both modified/new Python files compile with `py_compile`.
+- The NumPy checkpoint audit ran successfully on existing step 50/100/500 files.
+- A one-step JAX smoke run was attempted in a temporary output directory; it
+  reached trainer initialization but did not produce artifacts locally, so the
+  full JAX diagnostic remains to be executed on the intended GPU environment.
 
-Le test Zel’dovich exact montre que, avant shell crossing, `force ≈ a Pi`.
-Les deux normalisations annulent donc presque pareil les termes source sur la
-solution exacte. La correction est indispensable pour la cohérence générale,
-mais elle n’explique probablement pas seule le plafond 48,8/50. Elle peut
-toutefois modifier le paysage de gradient autour d’une solution imparfaite.
+## Next job (pending user confirmation)
 
-Le plafond pré-shell doit donc aussi être attribué à la résolution/localisation
-du pic et à l’optimisation KAN, après un nouveau contrôle avec la correction.
-
-## Artefacts
-
-- `run/local_diag/moment_hierarchy_m0_m9_a098_108/REPORT.md`
-- `run/local_diag/moment_hierarchy_m0_m9_a098_108/equation_scales.json`
-- `run/local_diag/m2_m3_convergence_a098_108/REPORT.md`
-- `run/local_diag/preshell_momentum_coefficients/REPORT.md`
-- `scripts/diagnose_preshell_momentum_coefficients.py`
-
-## Audit oracle décisif weak M0–M9 — 12 août 2026
-
-L’audit a réutilisé l’opérateur partagé `fivedelta_ablation_core` et les
-échelles physiques fixes des fenêtres 1/4/8/16. Aucun entraînement n’a été
-utilisé pour produire ces résultats.
-
-- Loss weak globale oracle : `5.4843e-6` (plancher numérique/coarse-graining).
-- Checkpoint data-only 3106390, meilleur état : `5.2851e-3`, reproduit à
-  `4e-8` près. La valeur rapportée à l’update 0 (`0.308943`) est conservée
-  comme métadonnée du run, car le champ de cet update n’a pas été rapatrié.
-- Le plancher M0 est dominé par la discrétisation : RMS normalisé moyen
-  `0.00201` sur la grille complète, `0.0301` à résolution spatiale /2 et
-  `0.999` à /4. La cadence temporelle /2 ne crée qu’une petite hausse
-  (`0.00332`). Il faut donc conserver la grille fine pour l’audit de loss.
-- La fermeture cinq-delta oracle (M0–M9 → M10) donne une erreur M10 de
-  `2.94e-4` et n’ajoute qu’environ `2.1e-15` RMS au résidu M9 : M10 n’est pas
-  le verrou principal de ce test.
-- Sur la feuille continue filtrée identiquement, la covariance exacte
-  `overline(g M1)` − `g_bar M1_bar` vaut `4.95%` RMS du produit de force
-  (5.4% sur l’intervalle held-out). Dans l’équation M2, remplacer le produit
-  factorisé par le produit filtré réduit le défaut relatif de ~`4.7%` à
-  ~`0.14%` (fenêtre 1 post-shell), et jusqu’à `0.09%` pour fenêtre 16.
-  C’est une correction physique/coarse-graining importante, pas un simple
-  réglage d’optimiseur.
-- Le spectre JVP calculé est explicitement un diagnostic en espace des
-  moments (condition ~`2.87`), pas une preuve d’unicité du réseau. Les
-  perturbations de paramètres et les distances entre plusieurs solutions
-  restent non disponibles localement.
-
-Artefacts détaillés :
-`run/local_diag/decisive_weak_oracle_audit_3106390/` (tables par équation et
-fenêtre, convergence M0, fermeture M9, spectre et rapport).
-
-Le premier relancement demandé (`3106471`) a atteint l’initialisation mais a
-échoué avant l’update 0 sur une erreur cuFFT d’allocation GPU. La même
-configuration corrigée a été relancée avec allocation GPU non préallouée et
-fraction mémoire limitée : job `3106473`; il ne faut pas l’interrompre.
-
-## Audit conditionnement cinq-delta — 12 août 2026
-
-Le diagnostic `run/local_diag/fivedelta_hyperbolicity_audit_3106390/` teste la
-matrice standard `A = d(M1,...,M10)/d(M0,...,M9)`, son inverse quand elle existe,
-les Hankel 5×5, la sensibilité de M10 et les limites de dégénérescence.
-
-- QMOM est réalisable sur seulement ~26.6 % des cellules oracle échantillonnées
-  et ~52.7 % du checkpoint 3106390 avec les dix moments bruts. Les cellules
-  restantes sont trop proches d’une distribution monostream, d’un poids nul ou
-  d’une collision de nœuds pour une inversion cinq-delta stable.
-- Dans les limites contrôlées, le conditionnement se dégrade brutalement :
-  `theta=1` donne `cond(H)≈1.8e3` et `cond(J)≈1.1e10`; à
-  `theta=1e-3`, l’inversion du Jacobien devient singulière ; poids nul ou nœuds
-  fusionnés sont également singuliers. C’est une vraie déficience de la
-  coordonnée des moments, pas un simple problème Adam.
-- Les perturbations de M0…M9 produisent donc souvent un M10 non réalisable ; la
-  sensibilité est fortement localisée dans les cellules où la variance ou un
-  poids s’effondre. Le modèle doit masquer/fallback ces cellules ou changer de
-  coordonnées (poids/nœuds directs, HyQMOM/EQMOM), plutôt que demander une
-  inversion brute partout.
-- HyQMOM à 11 moments et Gaussian-EQMOM ne sont pas implémentés dans le dépôt ;
-  aucune comparaison numérique ne doit être inventée. Le prochain test sans
-  entraînement serait leur implémentation minimale puis la comparaison sur le
-  même masque réalisable.
+Run the existing Global-T51 A/B/C ablation for 500 steps with the instrumented
+trainer; inspect the JSON files at steps 1, 50, 100, and 500 before changing
+any curriculum or objective.
