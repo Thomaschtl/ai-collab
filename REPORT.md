@@ -1,7 +1,7 @@
 # REPORT — Global-T51 diagnostics
 
 Task ID: audit-global-t51-legendre-calibration
-Status: all submitted audit jobs are finished; no training was launched.
+Status: corrected w05 baseline and calibrated audit completed; no training was launched.
 
 ## D/E functional freeze (3111377, valid)
 
@@ -27,7 +27,7 @@ For C500, \(\Delta a=0.001\), changing only the time-window phase gives
 51.1 at \(W=\Delta x\). The fixed P0 operator is phase-sensitive. No random
 shift training has been started.
 
-## Legendre calibration (3111380, completed)
+## Legendre calibration (3111391, valid after w05 correction)
 
 The audit now uses the trainer quadratures, face fluxes, drag and gravity
 conventions, and computes an independent post-IBP denominator for every Pk.
@@ -38,19 +38,20 @@ It writes 405 strata each for ZA, B2-7k and C500:
   P2 has medians 1.07e-1 (n=0) and 2.16e-1 (n=2).
 - These P1/P2 values exceed the matched ZA values by over 10x in 42–45 of
   the 45 non-negligible n=0/n=2 strata; B2 shows the same pattern.
-- However, ZA itself has systematic P0 normalized residuals at
-  \(W=.5\Delta x\) (up to 0.289 for n=0, 0.972 for n=1, 0.567 for n=2).
-  This is not a numerical floor: it exposes an existing mismatch between the
-  trainer's w05 quadrature support and its face/volume convention.
+- The w05 box was corrected from an effective \(\Delta x\) quadrature to two
+  Gauss half-intervals covering exactly \([-.25,+.25]\Delta x\), with total
+  weight \(.5\Delta x\). Faces and volume already used this geometry.
+- The ZA P0 maxima at w05 are now \(4.20\times10^{-7}\) (n=0), zero to
+  numerical precision (n=1), and \(3.53\times10^{-6}\) (n=2). The previous
+  0.289/0.972/0.567 anomaly is eliminated.
 
-Conclusion: P1/P2 retain strong calibrated excess over ZA, but the present
-audit cannot yet authorize a P0+P1+P2 training because the \(W=.5\Delta x\)
-baseline operator is inconsistent. Diagnose/correct that baseline first,
-then rerun the read-only calibration.
+Conclusion: the corrected baseline passes. P1/P2 retain strong calibrated
+excess over ZA, so the Legendre validation gate is now satisfied. A training
+submission still requires explicit user confirmation.
 
 ## Non-results
 
 - 3111378/3111379 failed before output (audit implementation shape bugs);
-  3111380 supersedes them.
+  3111380 exposed the w05 geometry defect; 3111391 is the valid replacement.
 - Adam A/B/C replay 3111288 OOMed; no gradient cosine, one-step matrix, or
   optimizer-state conclusion exists.
