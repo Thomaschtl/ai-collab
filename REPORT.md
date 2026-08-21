@@ -1,62 +1,56 @@
-# REPORT — Audit Mean/L4/CVaR Global-T51
+# REPORT — Global-T51 diagnostics
 
-Task ID: audit-global-t51-objective-identity  
-Status: instrumentation complete locally; no training or Izar job launched.
+Task ID: audit-global-t51-legendre-calibration
+Status: all submitted audit jobs are finished; no training was launched.
 
-## Finding from existing checkpoints
+## D/E functional freeze (3111377, valid)
 
-The A/B/C files are byte-distinct and their parameters are not identical:
+Along \(v=\theta_{100}-\theta_{50}\), raw KAN output changes, but the
+velocity correction becomes numerically null at the odd-parity projection:
 
-| step | pair | ||dtheta|| | max abs diff | cos(theta) |
-|---:|:---:|---:|---:|---:|
-| 50 | A-B | 2.046e-5 | 8.617e-7 | 0.990573 |
-| 50 | A-C | 6.328e-5 | 1.710e-6 | 0.910198 |
-| 50 | B-C | 6.371e-5 | 1.381e-6 | 0.909080 |
-| 100 | A-C | 8.994e-7 | 7.703e-7 | 0.999987 |
-| 500 | A-C | 8.235e-8 | 8.235e-8 | 0.999999917 |
+| stage, \(\lambda=4\) | \(\|\Delta\cdot\|\) |
+|---|---:|
+| raw KAN / even parity | 2.43e-3 |
+| odd parity | 3.41e-14 |
+| u after tanh / gate / final | 1e-14 to 5e-15 |
+| rho before mass normalisation | 3.42e-3 |
+| rho final | 1.42e-5 |
 
-Thus field equality cannot be attributed to equal checkpoint bytes. Differences
-collapse strongly after step 50, but no gradient conclusion is valid yet.
+Thus the local functional freeze of \(u\) precedes tanh and the gate; density
+motion is further reduced by mass renormalisation. This is evidence about the
+actual Adam direction, not an optimizer-state replay.
 
-## Correction and deterministic audit added
+## Fixed-window phase (3111301/3111308, valid for n=0)
 
-`train_ablation_global_t51_objectives.py` previously logged the loss/fields
-before Adam while writing theta after Adam. This invalidated direct association
-between a checkpoint and its recorded loss. It now re-evaluates each saved
-checkpoint on the exact same frozen T51 boxes.
+For C500, \(\Delta a=0.001\), changing only the time-window phase gives
+\(\max_\delta|R|/(\min_\delta|R|+\epsilon)=14.3\) at \(W=.5\Delta x\) and
+51.1 at \(W=\Delta x\). The fixed P0 operator is phase-sensitive. No random
+shift training has been started.
 
-For every saved step, the trainer now writes
-`models/audit_ablation_obj_<A|B|C>_step_<N>.json` with:
+## Legendre calibration (3111380, completed)
 
-- all A/B/C gradient norms, pairwise cosines and norm ratios at the same theta;
-- SHA256 of parameters and optimizer state;
-- one common-state Adam update per objective, its 3x3 loss matrix, directional
-  derivative, update cosines, and ||Delta rho||, ||Delta u||, ||Delta j||;
-- distributions of R, D, and |R|/D by (n,W,Delta-a), including requested tail
-  fractions and quantiles.
+The audit now uses the trainer quadratures, face fluxes, drag and gravity
+conventions, and computes an independent post-IBP denominator for every Pk.
+It writes 405 strata each for ZA, B2-7k and C500:
+`run/local_diag/legendre_trainer_calibrated.json` on Izar.
 
-`scripts/audit_global_t51_checkpoint_parameters.py` prints SHA256, pairwise
-parameter distances, cosine, and per-leaf max difference for pre-existing
-checkpoints without JAX reconstruction.
+- For C500, P1 has median \(|r|=1.26e-2\) for n=0 and 1.46e-1 for n=2;
+  P2 has medians 1.07e-1 (n=0) and 2.16e-1 (n=2).
+- These P1/P2 values exceed the matched ZA values by over 10x in 42–45 of
+  the 45 non-negligible n=0/n=2 strata; B2 shows the same pattern.
+- However, ZA itself has systematic P0 normalized residuals at
+  \(W=.5\Delta x\) (up to 0.289 for n=0, 0.972 for n=1, 0.567 for n=2).
+  This is not a numerical floor: it exposes an existing mismatch between the
+  trainer's w05 quadrature support and its face/volume convention.
 
-## Verification
+Conclusion: P1/P2 retain strong calibrated excess over ZA, but the present
+audit cannot yet authorize a P0+P1+P2 training because the \(W=.5\Delta x\)
+baseline operator is inconsistent. Diagnose/correct that baseline first,
+then rerun the read-only calibration.
 
-- Both modified/new Python files compile with `py_compile`.
-- The NumPy checkpoint audit ran successfully on existing step 50/100/500 files.
-- A one-step JAX smoke run was attempted in a temporary output directory; it
-  reached trainer initialization but did not produce artifacts locally, so the
-  full JAX diagnostic remains to be executed on the intended GPU environment.
+## Non-results
 
-## Next job (pending user confirmation)
-
-Run the existing Global-T51 A/B/C ablation for 500 steps with the instrumented
-trainer; inspect the JSON files at steps 1, 50, 100, and 500 before changing
-any curriculum or objective.
-
-## Temporal-wiggle guardrail
-
-No training method was launched or added. The external cancellation audit now
-reports TV_a(u), TV_a(j), zero crossings of u, temporal extrema, and peak-to-
-peak amplitudes, in addition to residuals. Phase-shift and P0/P1/P2 Legendre
-checks remain evaluation-only gates: do not enable random shifts, Galerkin
-modes, or a strong-in-time auxiliary loss before the fixed multiscale result.
+- 3111378/3111379 failed before output (audit implementation shape bugs);
+  3111380 supersedes them.
+- Adam A/B/C replay 3111288 OOMed; no gradient cosine, one-step matrix, or
+  optimizer-state conclusion exists.
