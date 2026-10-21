@@ -95,3 +95,25 @@ All used normalized-dt2, cold rank-1, M1 only, spatial mean, and 20 requested LM
 
 Artifacts: `run/local_diag/cumulative_local_q2_representation_lm/{3225444,3225446,3225447,3225448}/` on Izar.
 Conclusion: stop this representation sequence; do not launch a follow-up job from these variants.
+
+## 2026-10-21 — Frozen-IRLS acceptance and first-direction scans
+
+Jobs 3225544 (`1f`) and 3225545 (`3rf`) completed normally; all 20 steps were accepted.
+Both preflights passed (FD 3.44e-9; Richardson 3.945/4.004/3.909).
+
+| step | scan eps | frozen/predicted | refreshed/predicted |
+|---|---:|---:|---:|
+| 1f | .001 / .01 / 1 | .987 / .989 / 1.491 | .280 / .280 / -.662 |
+| 3rf | .001 / .01 / 1 | .108 / .108 / .060 | .033 / .033 / -.090 |
+
+| step | refreshed loss | peak; curvature | frozen ratios >.75 | refreshed >.75 | mu/sigma2 | sigma2 | step norm |
+|---|---|---|---:|---:|---|---:|---|
+| 1f | .0118533 -> .0060531 | 55.215337; .3845 | 18/20 | 1/20 | 3.81e-9–1e-3 | 2.54e14 | 5.46e-8–3.66e-7 |
+| 3rf | .0118533 -> .0118533 | 55.233631; .4172 | 0/20 | 0/20 | .001–16.384 | 4.00e19 | 1.54e-15–1.08e-11 |
+
+- `1f` confirms the trust-ratio pathology: the frozen quadratic has the right local slope, while denominator/weight refresh changes the measured decrease.
+- Frozen IRLS restores healthy ratios and damping for `1f`, but stronger weak-loss reduction flattens the peak further; no curvature recovery occurs.
+- `3rf` fails the directional consistency test even for eps=1e-3; its representation/Jacobian path has a second defect and its LM result is not interpretable as a representation test.
+
+Artifacts: `run/local_diag/cumulative_local_q2_representation_lm/{3225544/step_1f,3225545/step_3rf}/` on Izar.
+No follow-up job was launched.
