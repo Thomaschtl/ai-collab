@@ -74,3 +74,24 @@ submission still requires explicit user confirmation.
   3111380 exposed the w05 geometry defect; 3111391 is the valid replacement.
 - Adam A/B/C replay 3111288 OOMed; no gradient cosine, one-step matrix, or
   optimizer-state conclusion exists.
+
+## 2026-10-20 — Short cold-M1 representation sequence
+
+Jobs 3225444/46/47/48 completed normally; stderr was empty and MaxRSS was 3.43 GB.
+All used normalized-dt2, cold rank-1, M1 only, spatial mean, and 20 requested LM steps.
+
+| step | loss initial -> final | peak; curvature | ratios >.75/20 | mu/sigma2 | sigma2 | accepted step norm | accepted/attempted |
+|---|---|---|---:|---|---:|---|---:|
+| 1b square+xi | .0118533 -> .0117723 | 55.233118; .4163 | 1 | .004–1.72e7 | 2.54e14 | 4.38e-18–1.90e-8 | 17/18 |
+| 2 abs+xi | .0118533 -> .0117752 | 55.233094; .4162 | 2 | .004–1.37e8 | 2.53e14 | 5.90e-19–1.92e-8 | 19/20 |
+| 3 abs+tanh4 | .0118533 -> .0118531 | 55.233631; .4172 | 3 | .016–3.44e7 | 2.15e17 | 1.63e-20–2.47e-11 | 17/18 |
+| 3r +rhoIC | .0118533 -> .0118533 | 55.233631; .4172 | 0 | .016–262 | 4.00e19 | 7.56e-17–8.53e-13 | 6/7 |
+
+- Every preflight passed: FD max-relative error 3.44e-9; Richardson ratios 3.945/4.004/3.909.
+- Each run stopped on its first fully rejected LM step; missing steps count as failures in the /20 ratio criterion.
+- Controls: 3225038 curvature .421, 9/20, mu/sigma2 .06–2; 3225412 .417, 2/20, .06–4, sigma2 8.3e14.
+- No step reached curvature >.9. Mean lowers loss by 0.68% without improving the peak; abs adds no benefit.
+- The tanh carriers increase stiffness by 3–5 orders and make usable steps microscopic; rhoIC scaling is worst.
+
+Artifacts: `run/local_diag/cumulative_local_q2_representation_lm/{3225444,3225446,3225447,3225448}/` on Izar.
+Conclusion: stop this representation sequence; do not launch a follow-up job from these variants.
