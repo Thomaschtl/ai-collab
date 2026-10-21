@@ -149,3 +149,18 @@ Jobs 3225579 (`1m`), 3225580 (`1m_null`), and 3225581 (`1m_T`) completed normall
 Interpretation: the usable full-block Marquardt direction still reduces weak loss while flattening the peak, but these runs do not establish that ZA is outside the decoder tangent. The T-only and nullspace claims remain blocked by failed linear solves and an inadequately resolved diagonal estimate.
 
 Artifacts: `run/local_diag/cumulative_local_q2_representation_lm/{3225579/step_1m,3225580/step_1m_null,3225581/step_1m_T}/` on Izar. No follow-up job was launched.
+
+## 2026-10-21 — Direct ZA-fit and masked Marquardt controls
+
+Jobs 3226370–3226373 completed with empty stderr, but none produced the requested long trajectory: `za_fit`, `za_fit_TF`, and `1m2` accepted one step then rejected step 2; `1m2_T` rejected step 1. The final writer masks `stopped_no_acceptable_step` as `complete_without_success_criterion`.
+
+- `za_fit`: ZA objective `.0094895 -> .00292547` (-69.2%) in one step, but weak loss `.0118533 -> .101933` and peak `55.233631 -> 55.147109` versus target `55.555556`.
+- `za_fit_TF`: ZA objective `.0094895 -> .00263921` (-72.2%), weak loss `.0118533 -> .0862982`, peak `55.160146`. The uniform field MSE can improve while worsening the one-cell core, so this single step is not a representability test.
+- `1m2`: frozen weak ratio `.876`, but refreshed loss `.0118533 -> .0142456`, peak `55.230739`; step 2 CG residuals are `2.90–4.09` and all predicted decreases are negative.
+- `1m2_T`: no accepted step; CG residuals `1.02–2.55`.
+
+The live diagonal still spans extreme ranges (`1m2`: `2.0e-21` to `1.49e14`; ZA-fit: `5.5e-12` to `3.44e10`). The implementation adds `mu*D` in raw coordinates but neither transforms by `D^-1/2` nor preconditions CG, and stops after 30 iterations. Thus dead-column masking alone does not make the solve usable.
+
+Post-processing the saved `1m2` M1 residuals shows the one accepted step worsens centered core boxes most: RMS ratios final/initial are `2.88` for width 4 and `1.74` for width 8; the shortest temporal window (`wt=2`) reaches `4.91` and `3.08`. Widths 32/64 improve slightly. This directly localizes the flattening tradeoff to short-time centered-core constraints versus broader windows.
+
+Artifacts: `run/local_diag/cumulative_local_q2_representation_lm/{3226370/step_za_fit,3226371/step_za_fit_TF,3226372/step_1m2,3226373/step_1m2_T}/` on Izar. No follow-up job was launched.
