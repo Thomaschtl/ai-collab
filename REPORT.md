@@ -213,3 +213,12 @@ The exact algebraic nullspace fraction of the scaled peak gradient is negligible
 Conclusion: on every finitely usable/well-conditioned tangent band, weak Gauss-Newton prefers a lower peak, including near ZA. Raising the peak exists only in numerically and nonlinearly inaccessible near-singular directions. This resolves the optimizer ambiguity: the effective discretized weak objective drives flattening; no follow-up job was launched.
 
 Artifacts: `run/local_diag/cumulative_local_q2_representation_lm/{3227830/step_1d,3227831/step_1d,3227832/step_1d_T}/` on Izar.
+
+## 2026-10-22 — Core-weight scan and window continuation launched
+
+After local `py_compile`/`bash -n` checks and checksum-verified synchronization, two independent Izar jobs were submitted:
+
+- `3228133`: core-stratum weight spectral scan (`w = 1,10,100,1000`), GPU Volta, 40 GB, 2 h.
+- `3228134`: dense-LM continuation with the default `CONT_WEIGHT=1`, stages `1,2,4,6,10`, GPU Volta, 40 GB, 8 h.
+
+Both jobs entered `RUNNING` immediately on separate nodes (`i07`, `i17`); stderr was empty at launch. If `3228133` selects a different weight, rerun only the continuation with `--export=ALL,CONT_WEIGHT=<w>`.
