@@ -237,3 +237,7 @@ Job `3228133` completed normally in `1:10:54`; all four summaries are present. T
 No tested weight meets the predeclared criterion of positive peak motion at `s/smax >= 1e-4`. Peak changes at `1e-4` are `-1.55, -3.61, -4.20, -4.16` for weights `1,10,100,1000`; at `1e-6` they remain `-1.60, -3.17, -2.81, -3.18`.
 
 Positive peak motion still appears only at `1e-8`. Raising the weight reduces the corresponding raw norm from `4815` (`w=1`) to `874` (`w=1000`), but this remains far outside the local nonlinear regime. Core-row reweighting improves the near-singular scale quantitatively without moving the desired direction into a usable spectral band. Do not rerun continuation with any scanned weight.
+
+## 2026-10-22 — Reduced denominator-floor scan launched
+
+Submitted the single requested job `3228164`: baseline `(weight=1, floor=0)` plus denominator floors `0.01, 0.1, 1`, with `row_structure` diagnostics. It is running on `i05`, GPU Volta, 40 GB, 2 h; stderr was empty at launch. No continuation or other job was submitted.
