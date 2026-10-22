@@ -164,3 +164,17 @@ The live diagonal still spans extreme ranges (`1m2`: `2.0e-21` to `1.49e14`; ZA-
 Post-processing the saved `1m2` M1 residuals shows the one accepted step worsens centered core boxes most: RMS ratios final/initial are `2.88` for width 4 and `1.74` for width 8; the shortest temporal window (`wt=2`) reaches `4.91` and `3.08`. Widths 32/64 improve slightly. This directly localizes the flattening tradeoff to short-time centered-core constraints versus broader windows.
 
 Artifacts: `run/local_diag/cumulative_local_q2_representation_lm/{3226370/step_za_fit,3226371/step_za_fit_TF,3226372/step_1m2,3226373/step_1m2_T}/` on Izar. No follow-up job was launched.
+
+## 2026-10-22 — Jacobi-scaled CG (`za_p`, `1p`, `1p_null`, `1p_T`)
+
+Jobs 3226443–3226446 completed normally with empty stderr.
+
+- `za_p` accepted 40/40 steps, but only steps 35–40 have `CG_converged=true`; steps 1–34 have relative residuals `.00164–.273`. The ZA objective nevertheless decreased from `.0094895` to `2.7369e-5` (factor 347), and the final forward state has peak `55.63297` versus `55.55556`, global rho RMS `.003388`, core rho RMS `.04767`, endpoint-core max error `.34424`. Weak loss is `.02742` versus `.01185` initially.
+- Because representability is an existence question, that final state rules out a hard decoder ceiling near peak `55.2`; it does not prove exact representation of the full ZA core/trajectory. The optimization path is not a clean GN trajectory because its first 34 solves were unconverged, and the six converged final steps occur only at mu `1.02–65.5`, with little remaining progress.
+- `1p` accepted no step; all four solves are unconverged (relative residual `.221–1.77`). No physics conclusion.
+- `1p_null` accepted no LM step, and its three constrained solves are grossly unconverged (relative residual `5.97–11.9`). The newly reported cheap peak-restoration cost (`~1e-4`, below base loss `.01185`) is invalid until the constrained solve converges.
+- `1p_T` accepted 20 steps, but only steps 2–6 converge; later residuals reach `.410`. Across the five converged high-damping steps, the peak stays essentially fixed/slightly lower (`55.23359 -> 55.23315`). The final loss `.00596` and peak `55.23070` mix converged and unconverged steps and are not a clean T-only result.
+
+Interpretation: Jacobi scaling helps only once damping becomes large; it does not yet solve the low-damping weak or nullspace systems. The decoder can produce a near-ZA peak, so the remaining issue is not a simple representational ceiling, but the weak-objective/tangent question remains unresolved by `1p` and `1p_null`.
+
+Artifacts: `run/local_diag/cumulative_local_q2_representation_lm/{3226443/step_za_p,3226444/step_1p,3226445/step_1p_null,3226446/step_1p_T}/` on Izar. No follow-up job was launched.
