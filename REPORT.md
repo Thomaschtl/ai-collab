@@ -229,3 +229,11 @@ Both jobs entered `RUNNING` immediately on separate nodes (`i07`, `i17`); stderr
 - `3228134` completed normally but stopped scientifically at continuation stage 0 (`a=0.9802`): zero accepted LM steps, initial/final loss `0.0274375`.
 - The unchanged theta0 endpoint peak is already `50.50231` versus ZA `50.50505`, but the curvature criterion is undefined because no step was accepted.
 - All four candidates predicted a decrease of about `0.0268–0.0274`, yet refreshed loss rose to `0.0804–0.1131` and frozen loss exploded to `2.76e4–1.01e5`; rejection was therefore correct. The current continuation cannot enter even the shortest window with `CONT_WEIGHT=1`.
+
+## 2026-10-22 — Core-weight scan 3228133 complete
+
+Job `3228133` completed normally in `1:10:54`; all four summaries are present. The only stderr line is the harmless final self-`grep` warning.
+
+No tested weight meets the predeclared criterion of positive peak motion at `s/smax >= 1e-4`. Peak changes at `1e-4` are `-1.55, -3.61, -4.20, -4.16` for weights `1,10,100,1000`; at `1e-6` they remain `-1.60, -3.17, -2.81, -3.18`.
+
+Positive peak motion still appears only at `1e-8`. Raising the weight reduces the corresponding raw norm from `4815` (`w=1`) to `874` (`w=1000`), but this remains far outside the local nonlinear regime. Core-row reweighting improves the near-singular scale quantitatively without moving the desired direction into a usable spectral band. Do not rerun continuation with any scanned weight.
