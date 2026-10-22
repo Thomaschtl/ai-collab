@@ -193,3 +193,23 @@ The exact tangent audit at theta0 reports nullspace fraction `7.75e-8` for the s
 Interpretation: explicit J/SVD removes solver ambiguity and exposes the actual obstruction. Unthresholded exact column normalization is unusable for near-zero columns; a finite trust region or relative column-norm cutoff is required. No follow-up job was launched.
 
 Artifacts: `run/local_diag/cumulative_local_q2_representation_lm/{3227348/step_1d,3227349/step_1d,3227350/step_1d_T}/` on Izar.
+
+## 2026-10-22 — Dense SVD with More floor and raw trust region
+
+Jobs 3227830 (`1d` theta0), 3227831 (`1d` ZA warm start), and 3227832 (`1d_T`) completed normally with empty stderr. All rejected every first-step proposal; the trust-region attempts stopped at raw norms `.0235`, `.0576`, and `.107`, still outside the nonlinear regime.
+
+The corrected factorisation uses only More-effective columns: 5,715/13,054 at theta0, 6,081/12,898 at ZA-like, and 5,623/5,896 for T. Dense/adjoint gradient errors remain `7.5e-9–8.3e-8`.
+
+Exact spectral audit from theta0:
+- `s > 1e-2 smax`: residual fraction `.658`, peak change `-.0131`, raw step `.540`.
+- `s > 1e-4`: residual fraction `.101`, peak `-1.553`, raw step `6.27`.
+- `s > 1e-6`: residual fraction `.0263`, peak `-1.603`, raw step `32.8`.
+- Peak change becomes positive only at `s > 1e-8`: `+16.0`, but raw step `4.81e3` (`+15.8`, `1.90e4` at `1e-10`).
+
+From the ZA-like state the same pattern holds: peak changes `-.186`, `-.467`, `-.504` through the `1e-2–1e-6` bands, then `+9.04` only at `1e-8` with raw step `6.78e3`.
+
+The exact algebraic nullspace fraction of the scaled peak gradient is negligible (`~2e-29`). The theoretical near-zero peak-restoration cost is carried by extremely small nonzero singular directions, not a true nullspace, and requires unusably large raw parameter changes.
+
+Conclusion: on every finitely usable/well-conditioned tangent band, weak Gauss-Newton prefers a lower peak, including near ZA. Raising the peak exists only in numerically and nonlinearly inaccessible near-singular directions. This resolves the optimizer ambiguity: the effective discretized weak objective drives flattening; no follow-up job was launched.
+
+Artifacts: `run/local_diag/cumulative_local_q2_representation_lm/{3227830/step_1d,3227831/step_1d,3227832/step_1d_T}/` on Izar.
