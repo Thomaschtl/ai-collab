@@ -178,3 +178,18 @@ Jobs 3226443–3226446 completed normally with empty stderr.
 Interpretation: Jacobi scaling helps only once damping becomes large; it does not yet solve the low-damping weak or nullspace systems. The decoder can produce a near-ZA peak, so the remaining issue is not a simple representational ceiling, but the weak-objective/tangent question remains unresolved by `1p` and `1p_null`.
 
 Artifacts: `run/local_diag/cumulative_local_q2_representation_lm/{3226443/step_za_p,3226444/step_1p,3226445/step_1p_null,3226446/step_1p_T}/` on Izar. No follow-up job was launched.
+
+## 2026-10-22 — Explicit dense Jacobian/SVD
+
+Jobs 3227348 (`1d` theta0), 3227349 (`1d` ZA warm start), and 3227350 (`1d_T`) completed normally with empty stderr and valid SVD artifacts, but all rejected every first-step proposal.
+
+- Dense construction is internally consistent: gradient dense/adjoint relative errors are `7.5e-9`, `1.3e-8`, `8.3e-8`; build times `295 s`, `331 s`, `155 s`.
+- Theta0 TSF: J has 7,560 active rows and 13,005 selected columns; 5,639 singular values are below `1e-12*smax`. Column norms span `1.64e-19–1.19e7`. Exact normalization yields raw step norms `1.24e16–2.96e16`; all four proposals increase both frozen and refreshed loss.
+- ZA warm start: 12,864 selected columns, norms `1.53e-18–7.33e6`, raw steps `6.43e14–3.23e15`; no accepted proposal. Even line-search epsilon `1e-3` increases frozen loss.
+- T only: 5,896 selected columns, norms `3.73e-10–1.46e6`, raw steps `2.93e7–7.61e7`; no accepted proposal.
+
+The exact tangent audit at theta0 reports nullspace fraction `7.75e-8` for the scaled peak gradient, but minimum residual cost per unit peak `9.62e-8` and quadratic cost for the missing peak `4.80e-16`. Thus the peak is not in the exact algebraic nullspace under the chosen cutoff, but lies along extremely small singular directions. This is a local tangent statement only: realizing it requires enormous raw parameter motion and immediately leaves the linear regime.
+
+Interpretation: explicit J/SVD removes solver ambiguity and exposes the actual obstruction. Unthresholded exact column normalization is unusable for near-zero columns; a finite trust region or relative column-norm cutoff is required. No follow-up job was launched.
+
+Artifacts: `run/local_diag/cumulative_local_q2_representation_lm/{3227348/step_1d,3227349/step_1d,3227350/step_1d_T}/` on Izar.
