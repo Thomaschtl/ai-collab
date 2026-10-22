@@ -222,3 +222,10 @@ After local `py_compile`/`bash -n` checks and checksum-verified synchronization,
 - `3228134`: dense-LM continuation with the default `CONT_WEIGHT=1`, stages `1,2,4,6,10`, GPU Volta, 40 GB, 8 h.
 
 Both jobs entered `RUNNING` immediately on separate nodes (`i07`, `i17`); stderr was empty at launch. If `3228133` selects a different weight, rerun only the continuation with `--export=ALL,CONT_WEIGHT=<w>`.
+
+## 2026-10-22 — Early status of core-weight scan and continuation
+
+- `3228133` is healthy and running with empty stderr. It completed `w=1` and entered `w=10`; the `w=1` spectrum reproduces the prior result (peak increase only at `s/smax <= 1e-8`, requiring raw norm about `4.8e3`).
+- `3228134` completed normally but stopped scientifically at continuation stage 0 (`a=0.9802`): zero accepted LM steps, initial/final loss `0.0274375`.
+- The unchanged theta0 endpoint peak is already `50.50231` versus ZA `50.50505`, but the curvature criterion is undefined because no step was accepted.
+- All four candidates predicted a decrease of about `0.0268–0.0274`, yet refreshed loss rose to `0.0804–0.1131` and frozen loss exploded to `2.76e4–1.01e5`; rejection was therefore correct. The current continuation cannot enter even the shortest window with `CONT_WEIGHT=1`.
