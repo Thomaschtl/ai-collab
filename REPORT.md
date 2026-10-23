@@ -300,3 +300,7 @@ The scientific target did not improve. Peak moved `55.23363 -> 55.23024` (T+S+F,
 The absolute floor rescales 1,239 T+S+F and 1,029 T+F columns. It changes the spectral metric itself: at `1e-4`, peak change becomes `-.0155` (T+S+F, raw norm `.0132`) and `-.00204` (T+F, `.0120`), so the former `+.707` favorable direction is no longer selected.
 
 Most importantly, the directional JVP-vs-centered-FD control fails: relative errors are `2.90/2.87` for T+S+F and `3.94/3.94` for T+F at `h=1e-6/1e-7`, not `~1e-6`. The errors are stable as h shrinks, so spline/branch non-smoothness or a diagnostic/residual inconsistency remains. The weak-column second-curvature hypothesis is therefore insufficient: the absolute floor repairs step acceptance but does not validate the Jacobian or recover the peak.
+
+## 2026-10-23 — JVP/FD bisection launched
+
+Submitted the single requested job `3229259` (`REPR_STEP=fd_bisect`) after syntax checks and checksum-verified synchronization. It uses one LM step, a two-iteration CG direction, no dense Jacobian, and writes global plus per-block T/S/F JVP-vs-centered-FD comparisons for `(rho,u)` fields and the frozen residual. It started immediately on `i25` with one Volta GPU, 40 GB and a 1:30 h limit; stderr was empty at launch.
