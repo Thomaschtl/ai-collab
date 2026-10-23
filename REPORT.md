@@ -272,3 +272,9 @@ All four full LM attempts were too large (raw norms `61.9,32.2,15.2,8.00`) and i
 ## 2026-10-23 — Floor-1 T+F control submitted
 
 Added `REPR_STEP=1d_floor_TF`, identical to `1d_floor` except that the subcell block S is frozen and only `density_model` (T) plus `local_flux_coefficients` (F) are trainable. Submitted job `3229102` with a 4 h limit. It requests one Volta GPU, 8 CPUs and 40 GB and was pending for resources at submission; no other job was launched.
+
+## 2026-10-23 — Full-window floor-1 LM 3229086 complete
+
+Job `3229086` completed normally in `19:56` with empty stderr, but stopped at step 1 with zero accepted steps. The floor-1 spectral audit is reproduced: hard `1e-4` band peak change `+.707` (raw norm `4.00`), and the smoothly damped initial LM direction predicts `+.0776` (raw norm `2.86`).
+
+The nonlinear check rejects that tangent direction immediately. All four attempts increase refreshed loss (`.0442–.1806` versus `.01063`) and explode frozen loss. Unlike continuation 3229087, even line-search amplitude `.001` (raw move only `.00286`) increases frozen loss by `.00982` and refreshed loss by `.00270`. Thus the favorable peak motion exists in the Jacobian/SVD model but is not exploitable at the smallest sampled finite amplitude; the local linear regime is extraordinarily small or the residual/Jacobian path has a remaining finite-difference inconsistency. The T+F control `3229102` is the next discriminator.
