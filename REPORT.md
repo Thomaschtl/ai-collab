@@ -268,3 +268,7 @@ Job `3229087` completed normally (`0:12:25`, exit `0`, empty stderr) but stopped
 The favorable full-window floor-1 spectrum does not transfer unchanged to this one-step window. Here the hard `1e-4` spectral truncation predicts peak change `-.0425` (raw norm `94.6`), while the smoothly damped LM direction predicts `-.0336` (raw norm `61.9`). Thus it already points weakly toward further flattening.
 
 All four full LM attempts were too large (raw norms `61.9,32.2,15.2,8.00`) and increased refreshed loss to `.0346–.0727`; frozen loss diverged. However, the diagnostic line search at amplitude `.001` (raw move `.0619`) *did* reduce frozen loss by `.01721` and refreshed loss by `.01275`. The stop therefore reflects an insufficiently small trust-region/line-search acceptance path, not absence of any descent, but that tiny descent still follows a slightly peak-lowering direction. The independent full-window control `3229086` remains running.
+
+## 2026-10-23 — Floor-1 T+F control submitted
+
+Added `REPR_STEP=1d_floor_TF`, identical to `1d_floor` except that the subcell block S is frozen and only `density_model` (T) plus `local_flux_coefficients` (F) are trainable. Submitted job `3229102` with a 4 h limit. It requests one Volta GPU, 8 CPUs and 40 GB and was pending for resources at submission; no other job was launched.
