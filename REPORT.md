@@ -316,3 +316,9 @@ However, the diagnostic direction is numerically unsuitable: total norm is only 
 ## 2026-10-23 — Normalized JVP/FD bisection relaunched
 
 Submitted the single requested job `3229297` (`REPR_STEP=fd_bisect`) after checksum-verified synchronization of `scripts/train_decoupled_spatial_cvar_multiscale.py`. Every tested direction is now normalized before finite differences; the diagnostic uses `h=1e-5,1e-6`, adds deterministic random directions for T/S/F beside the CG direction, and reports rho, u and frozen-residual consistency separately. The job started immediately on `i27` with a 1:30 h limit. No other job was submitted.
+
+## 2026-10-23 — Normalized bisection 3229297 localizes the mismatch to T
+
+Job `3229297` completed normally in `5:10` (exit `0`, about 3.6 GB RAM). S is autodiff/FD-consistent: random-S relative errors at `h=1e-5` are `7.2e-9` for rho, `2.7e-8` for u and `4.8e-7` for the frozen residual. F shows the expected centered-FD truncation law: random-F errors fall by approximately 100x from `h=1e-5` to `1e-6` (`rho 2.4e-7 -> 2.4e-9`, `u 2.0e-5 -> 2.0e-7`, residual `1.6e-5 -> 1.6e-7`).
+
+T fails before the residual operator. For random T, rho/u/residual errors are respectively `5.0%/5.2%/3.4%` at `h=1e-5` and worsen to `40.7%/54.2%/19.5%` at `h=1e-6`; the CG-T direction shows the same roughly `1/h` worsening (`rho .43% -> 3.91%`, `u .53% -> 4.42%`). Because rho and u are both already wrong for T while S/F and their shared downstream mass/residual paths pass, the mismatch is localized to the density-model T decoder, strongly favoring the KAN/spline evaluation rather than the weak operator or only the nested time JVP. The worsening with smaller h is not smooth O(h^2) truncation; it is consistent with a nonsmooth/numerically unresolved T spline path.
