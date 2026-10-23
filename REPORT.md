@@ -278,3 +278,9 @@ Added `REPR_STEP=1d_floor_TF`, identical to `1d_floor` except that the subcell b
 Job `3229086` completed normally in `19:56` with empty stderr, but stopped at step 1 with zero accepted steps. The floor-1 spectral audit is reproduced: hard `1e-4` band peak change `+.707` (raw norm `4.00`), and the smoothly damped initial LM direction predicts `+.0776` (raw norm `2.86`).
 
 The nonlinear check rejects that tangent direction immediately. All four attempts increase refreshed loss (`.0442–.1806` versus `.01063`) and explode frozen loss. Unlike continuation 3229087, even line-search amplitude `.001` (raw move only `.00286`) increases frozen loss by `.00982` and refreshed loss by `.00270`. Thus the favorable peak motion exists in the Jacobian/SVD model but is not exploitable at the smallest sampled finite amplitude; the local linear regime is extraordinarily small or the residual/Jacobian path has a remaining finite-difference inconsistency. The T+F control `3229102` is the next discriminator.
+
+## 2026-10-23 — Absolute-More-floor reruns submitted
+
+The updated dense LM uses `cumulative_tsf_lm_raw_coordinate_max=1e-2`, reports per-block/max-coordinate moves and column norms, performs centered JVP-vs-FD checks at `h=1e-6,1e-7`, extends line search to `1e-4`, and includes fallback line-search acceptance.
+
+Submitted `3229114` (`1d_floor`, T+S+F) and `3229115` (`1d_floor_TF`, S frozen), both 4 h. They were pending for resources/priority at submission. The already-running old-code T+F job `3229102` was not interrupted and remains a historical control.
