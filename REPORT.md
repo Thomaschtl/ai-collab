@@ -290,3 +290,13 @@ Submitted `3229114` (`1d_floor`, T+S+F) and `3229115` (`1d_floor_TF`, S frozen),
 Job `3229102` completed normally in `16:34`, empty stderr, but accepted zero steps. Removing S nearly removes the favorable floor-1 motion at the selected `1e-4` band: hard-band peak change is only `+.00682` (versus `+.707` for T+S+F), and the smoothly damped LM predicts only `+9.5e-5` (versus `+.0776`). At `1e-6`, T+F instead predicts `+.647`, showing that removing S reorganizes where the peak-carrying direction lies in the spectrum.
 
 The nonlinear mismatch remains without S and is worse at the sampled micro-step: line-search amplitude `.001` increases frozen loss by `.01793` and refreshed loss by `.00317`. Therefore S is not the sole source of the immediate nonlinear breakdown, although it carried most of the favorable motion at the originally selected `1e-4` band. Updated absolute-floor jobs `3229114/3229115` remain the decisive comparison.
+
+## 2026-10-23 — Absolute-floor jobs 3229114/3229115 complete
+
+Both jobs completed normally with empty stderr and accepted all 15 steps. T+S+F loss fell `.010632 -> .003481`; T+F fell `.010632 -> .003500`. The fallback line search made the first acceptance at amplitude `.003`; later full proposals had healthy frozen ratios (`~1.3–2.1`).
+
+The scientific target did not improve. Peak moved `55.23363 -> 55.23024` (T+S+F, curvature `.4172 -> .4111`) and `55.23363 -> 55.23146` (T+F, curvature `.4172 -> .4133`). S is largely irrelevant to the achieved loss reduction and only modestly worsens flattening.
+
+The absolute floor rescales 1,239 T+S+F and 1,029 T+F columns. It changes the spectral metric itself: at `1e-4`, peak change becomes `-.0155` (T+S+F, raw norm `.0132`) and `-.00204` (T+F, `.0120`), so the former `+.707` favorable direction is no longer selected.
+
+Most importantly, the directional JVP-vs-centered-FD control fails: relative errors are `2.90/2.87` for T+S+F and `3.94/3.94` for T+F at `h=1e-6/1e-7`, not `~1e-6`. The errors are stable as h shrinks, so spline/branch non-smoothness or a diagnostic/residual inconsistency remains. The weak-column second-curvature hypothesis is therefore insufficient: the absolute floor repairs step acceptance but does not validate the Jacobian or recover the peak.
