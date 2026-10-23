@@ -312,3 +312,7 @@ Job `3229259` completed normally in `4:53`, empty stderr. Along its full directi
 At face value this points to the T/density-KAN decoder, while F is consistent and S is unresolved. The KAN's hard B-spline interval indicator is the only obvious nonsmooth operation on the T path; the positive asinh/mass map is shared with F and is disfavored as culprit.
 
 However, the diagnostic direction is numerically unsuitable: total norm is only `4.84e-9` (T `4.37e-10`, S `6.87e-14`, F `4.82e-9`). Multiplication by `h=1e-6` produces parameter perturbations around `1e-15`; S is below representability and T is near roundoff. The worsening global error as h shrinks and the near-perfect line-scan agreement over amplitudes `1e-4..1` confirm cancellation rather than reproducing the earlier finite-step mismatch. Therefore the block ranking suggests T but does not yet prove the KAN operation; the FD direction must be normalized before a definitive localization.
+
+## 2026-10-23 — Normalized JVP/FD bisection relaunched
+
+Submitted the single requested job `3229297` (`REPR_STEP=fd_bisect`) after checksum-verified synchronization of `scripts/train_decoupled_spatial_cvar_multiscale.py`. Every tested direction is now normalized before finite differences; the diagnostic uses `h=1e-5,1e-6`, adds deterministic random directions for T/S/F beside the CG direction, and reports rho, u and frozen-residual consistency separately. The job started immediately on `i27` with a 1:30 h limit. No other job was submitted.
