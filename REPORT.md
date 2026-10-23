@@ -260,3 +260,11 @@ After syntax checks and checksum-verified sync of the three requested Python fil
 - `3229087`: continuation with `CONT_FLOOR=1`, `CONT_BAND=1e-4`, 8 h limit.
 
 Both request one Volta GPU, 8 CPUs and 40 GB. At submission they were pending (`Resources` and `Priority` respectively), with no stderr yet.
+
+## 2026-10-23 — Continuation 3229087 stopped at stage 0
+
+Job `3229087` completed normally (`0:12:25`, exit `0`, empty stderr) but stopped scientifically at `[.98,.9802]`: zero accepted steps, initial/final loss `.0231382`, theta0 peak `50.50231` versus ZA `50.50505`.
+
+The favorable full-window floor-1 spectrum does not transfer unchanged to this one-step window. Here the hard `1e-4` spectral truncation predicts peak change `-.0425` (raw norm `94.6`), while the smoothly damped LM direction predicts `-.0336` (raw norm `61.9`). Thus it already points weakly toward further flattening.
+
+All four full LM attempts were too large (raw norms `61.9,32.2,15.2,8.00`) and increased refreshed loss to `.0346–.0727`; frozen loss diverged. However, the diagnostic line search at amplitude `.001` (raw move `.0619`) *did* reduce frozen loss by `.01721` and refreshed loss by `.01275`. The stop therefore reflects an insufficiently small trust-region/line-search acceptance path, not absence of any descent, but that tiny descent still follows a slightly peak-lowering direction. The independent full-window control `3229086` remains running.
