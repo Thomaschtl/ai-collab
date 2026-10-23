@@ -304,3 +304,11 @@ Most importantly, the directional JVP-vs-centered-FD control fails: relative err
 ## 2026-10-23 — JVP/FD bisection launched
 
 Submitted the single requested job `3229259` (`REPR_STEP=fd_bisect`) after syntax checks and checksum-verified synchronization. It uses one LM step, a two-iteration CG direction, no dense Jacobian, and writes global plus per-block T/S/F JVP-vs-centered-FD comparisons for `(rho,u)` fields and the frozen residual. It started immediately on `i25` with one Volta GPU, 40 GB and a 1:30 h limit; stderr was empty at launch.
+
+## 2026-10-23 — JVP/FD bisection 3229259 complete but under-scaled
+
+Job `3229259` completed normally in `4:53`, empty stderr. Along its full direction, residual JVP/FD error is `.0386` at `h=1e-6` and worsens to `.127` at `1e-7`, not the prior `~3`. Per block at `h=1e-6`: T fields `.680`, residual `.744`; F fields `7.16e-5`, residual `.0103`; S reports `1.0` because its FD is exactly zero.
+
+At face value this points to the T/density-KAN decoder, while F is consistent and S is unresolved. The KAN's hard B-spline interval indicator is the only obvious nonsmooth operation on the T path; the positive asinh/mass map is shared with F and is disfavored as culprit.
+
+However, the diagnostic direction is numerically unsuitable: total norm is only `4.84e-9` (T `4.37e-10`, S `6.87e-14`, F `4.82e-9`). Multiplication by `h=1e-6` produces parameter perturbations around `1e-15`; S is below representability and T is near roundoff. The worsening global error as h shrinks and the near-perfect line-scan agreement over amplitudes `1e-4..1` confirm cancellation rather than reproducing the earlier finite-step mismatch. Therefore the block ranking suggests T but does not yet prove the KAN operation; the FD direction must be normalized before a definitive localization.
