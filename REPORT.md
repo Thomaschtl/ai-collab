@@ -284,3 +284,9 @@ The nonlinear check rejects that tangent direction immediately. All four attempt
 The updated dense LM uses `cumulative_tsf_lm_raw_coordinate_max=1e-2`, reports per-block/max-coordinate moves and column norms, performs centered JVP-vs-FD checks at `h=1e-6,1e-7`, extends line search to `1e-4`, and includes fallback line-search acceptance.
 
 Submitted `3229114` (`1d_floor`, T+S+F) and `3229115` (`1d_floor_TF`, S frozen), both 4 h. They were pending for resources/priority at submission. The already-running old-code T+F job `3229102` was not interrupted and remains a historical control.
+
+## 2026-10-23 — Old-code T+F control 3229102 complete
+
+Job `3229102` completed normally in `16:34`, empty stderr, but accepted zero steps. Removing S nearly removes the favorable floor-1 motion at the selected `1e-4` band: hard-band peak change is only `+.00682` (versus `+.707` for T+S+F), and the smoothly damped LM predicts only `+9.5e-5` (versus `+.0776`). At `1e-6`, T+F instead predicts `+.647`, showing that removing S reorganizes where the peak-carrying direction lies in the spectrum.
+
+The nonlinear mismatch remains without S and is worse at the sampled micro-step: line-search amplitude `.001` increases frozen loss by `.01793` and refreshed loss by `.00317`. Therefore S is not the sole source of the immediate nonlinear breakdown, although it carried most of the favorable motion at the originally selected `1e-4` band. Updated absolute-floor jobs `3229114/3229115` remain the decisive comparison.
