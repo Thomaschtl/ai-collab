@@ -251,3 +251,12 @@ At spectral floor `1e-4`, peak changes for denominator floors `0, .01, .1, 1` ar
 The baseline stiff singular energy is not centered on the core: `76.3%` lies in offsets up to 32 cells, `23.7%` up to 8 cells, and only `.0375%` in the exact core bin. Its denominator-weighted mean is `log10 D=-5.65`, confirming that tiny-denominator shoulder/decentered rows dominate the stiff spectrum. The floor changes the sign without core reweighting, supporting the quasi-null-row normalization diagnosis rather than the claim that centered core rows intrinsically prefer flattening.
 
 Caveat: at floor `1`, adding the `1e-6` band makes peak change negative again (`-.709`, raw norm `52.4`), so the next LM must verify that damping keeps the effective step near the favorable `1e-4` band. No follow-up job was launched.
+
+## 2026-10-23 — Floor-1 LM and continuation submitted
+
+After syntax checks and checksum-verified sync of the three requested Python files, submitted exactly two jobs:
+
+- `3229086`: `REPR_STEP=1d_floor`, 15-step dense LM on `[.98,.982]`, denominator floor `1`, initial damping from spectral band `1e-4`, 4 h limit.
+- `3229087`: continuation with `CONT_FLOOR=1`, `CONT_BAND=1e-4`, 8 h limit.
+
+Both request one Volta GPU, 8 CPUs and 40 GB. At submission they were pending (`Resources` and `Priority` respectively), with no stderr yet.
