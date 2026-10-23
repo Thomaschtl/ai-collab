@@ -241,3 +241,13 @@ Positive peak motion still appears only at `1e-8`. Raising the weight reduces th
 ## 2026-10-22 — Reduced denominator-floor scan launched
 
 Submitted the single requested job `3228164`: baseline `(weight=1, floor=0)` plus denominator floors `0.01, 0.1, 1`, with `row_structure` diagnostics. It is running on `i05`, GPU Volta, 40 GB, 2 h; stderr was empty at launch. No continuation or other job was submitted.
+
+## 2026-10-23 — Reduced denominator-floor scan 3228164 complete
+
+Job `3228164` completed normally in `1:12:23`; all four summaries exist. The only stderr line is the harmless final self-`grep` warning.
+
+At spectral floor `1e-4`, peak changes for denominator floors `0, .01, .1, 1` are `-1.553, -1.576, -2.014, +0.707`; the floor-1 residual fraction is `.06785` with raw step norm `4.00`. Thus floor `1` meets the predeclared criterion and moves a peak-raising direction into a usable band. Floor `.1` only gives a negligible positive sign at `1e-2` (`+.0093`) and remains negative at `1e-4`.
+
+The baseline stiff singular energy is not centered on the core: `76.3%` lies in offsets up to 32 cells, `23.7%` up to 8 cells, and only `.0375%` in the exact core bin. Its denominator-weighted mean is `log10 D=-5.65`, confirming that tiny-denominator shoulder/decentered rows dominate the stiff spectrum. The floor changes the sign without core reweighting, supporting the quasi-null-row normalization diagnosis rather than the claim that centered core rows intrinsically prefer flattening.
+
+Caveat: at floor `1`, adding the `1e-6` band makes peak change negative again (`-.709`, raw norm `52.4`), so the next LM must verify that damping keeps the effective step near the favorable `1e-4` band. No follow-up job was launched.
