@@ -348,3 +348,9 @@ The first exact band-`1e-4` LM direction itself predicts peak change `-.00633`. 
 ## 2026-10-24 — Warm-start ZA and second-order hard-IC runs submitted
 
 Resolved the unique `za_p` warm start to job `3226443` (`endpoint_peak=55.63297`), checkpoint `run/local_diag/cumulative_local_q2_representation_lm/3226443/step_za_p/cold_m1_lm/checkpoint_final.npz`. Submitted in parallel `3230464` (`1d_floor` from that checkpoint) and `3230465` (`1d_floor_c2` from theta0), each with a 4 h limit. Both code files were syntax-checked and checksum-identical on Izar. At submission both were pending (`Resources`/`Priority`). The c2 step includes the final exact audit/post-processing and logs the hard-IC equation-vs-ZA curvature plus initial peak before LM.
+
+## 2026-10-24 — Early status of ZA warm start and c2
+
+Both jobs are running. `3230464` has accepted 2 steps: weak loss `0.01658 -> 0.00607` while peak remains near ZA (`55.63297 -> 55.63258`, reference `55.55556`) and core-4 mass stays `0.0733015` versus reference `0.0732827`. This is the first early evidence that weak loss can fall substantially from a ZA-like state without immediate peak collapse. Its stderr contains 10 XLA autotuner `Red zone modified` messages from startup on `i10`; no exception occurred and checkpoints continue to be written, but final results need that caveat.
+
+`3230465` confirms a material missing hard-IC curvature. Before LM, c2 raises the theta0 peak `55.23363 -> 55.29004`, increasing recovered curvature `.4172 -> .5179` and closing 17.5% of the former missing peak gap. More strikingly, initial weak loss is only `4.776e-4` versus `1.063e-2` without c2 (95.5% lower), and core-4 mass after two tiny accepted steps is `0.07328626`, within `3.5e-6` of ZA. After two steps loss is `4.676e-4` and peak is unchanged. Both runs remain in progress; final audit/post-processing is not yet available.
