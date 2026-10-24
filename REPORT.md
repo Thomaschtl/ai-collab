@@ -336,3 +336,11 @@ The checkpoint resolves the apparent contradiction. Most large KAN T arrays (`de
 ## 2026-10-23 — Float64 validation and LM submitted
 
 After promoting every floating model/reference leaf to float64, submitted `3229374` (`fd_bisect`) then `3229376` (`1d_floor`, 4 h) in the requested order. The validation log reports all 34 floating leaves as float64, zero stderr, and unchanged theta0 decoding to about `1e-14`. At handoff `3229374` was running on `i40` and `3229376` was pending; no wait/monitor loop remains active.
+
+## 2026-10-24 — Float64 validation passes; LM still selects the flat attractor
+
+Both jobs completed cleanly: `3229374` in `5:41` and `3229376` in `1:12:08`, with empty stderr. Float64 fixes the T derivative audit. On gradient-T, relative errors decrease by about 100x per decade from `h=1e-4` to `1e-6`: rho `1.01e-4 -> 1.01e-6 -> 1.04e-8`, u `1.58e-3 -> 1.58e-5 -> 1.59e-7`, frozen residual `6.35e-3 -> 6.35e-5 -> 6.35e-7`. The prior mixed-precision inconsistency is closed.
+
+The 15-step dense LM accepted all 15 steps and reduced weak loss `0.01063185 -> 0.00348622` (67.2%), but peak moved down `55.23363 -> 55.22983`; curvature `(peak-55)/.56` fell `.4172 -> .4104`, far from the `>.9` target and reference peak `55.55556`. Four-cell core mass moved slightly toward the lower ZA target (`~.0733149 -> .0733120`, target `.0732827`) without sharpening the central peak. This essentially reproduces the former float32 attractor (`3229114`: loss `.003481`, peak `55.23024`), so precision was a diagnostic/solver defect, not the scientific flattening cause.
+
+The first exact band-`1e-4` LM direction itself predicts peak change `-.00633`. Its linear model is now valid at small amplitude (directional JVP/FD `8.95e-4` at `1e-5`, `1.13e-5` at `1e-6`); line search decreases true loss for amplitudes through `.003`, then nonlinear breakdown begins by `.01`. Spectrally, usable bands do not contain a robust rising direction: peak changes are `+.00124` at `1e-2`, `-.0155` at `1e-4`, and `-.730` at `1e-6`. Large positive motion appears only in extremely weak bands (`+2.59` at `1e-8`, raw step `16.2`; exact `+20.35`, raw step `667`), outside the local nonlinear regime. Therefore the well-resolved local weak descent from theta0 genuinely prefers flattening; the old apparent ambiguity from float32 is removed.
