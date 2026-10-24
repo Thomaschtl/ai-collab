@@ -364,3 +364,9 @@ c2 `3230465` has reduced its already-low loss `4.776e-4 -> 3.833e-4` (19.7%) whi
 ## 2026-10-24 — c2 block and resolution controls submitted
 
 Submitted `3230494` (`1d_floor_c2_TF`, 4 h, T+F only on the 2048 grid) and `3230495` (`1d_floor_c2_r2`, 8 h, T+F on 4096 cells) in parallel with the active c2 job. The refined run keeps F and legacy boxes at fixed physical sizes and adds 1/2-fine-cell core boxes. Both scripts passed compilation and are checksum-identical on Izar; both variants log initial/per-step core-mass curvature recovery and include final exact audits. At handoff `3230494` was running on `i56`, while `3230495` was pending for resources.
+
+## 2026-10-24 — Warm-start 3230464 failed technically after six valid steps
+
+`3230464` ended `FAILED` after `44:26`, not normally. At the construction of the step-7 dense Jacobian on node `i10`, XLA/cuBLAS autotuning reported repeated red-zone modifications and finally `No valid config found`; this is a GPU kernel/autotuning failure, not LM rejection or scientific divergence. Six accepted checkpoints remain, with recovery at `checkpoint_step_006.npz`; no final checkpoint or final audit was produced.
+
+Across those six accepted steps, loss fell `0.0165798 -> 0.00286428` (82.7%), every frozen trust ratio was healthy (`0.83, 1.04, 1.35, 1.51, 1.49, 1.46`), and damping fell `2.21 -> .06897`. Peak was preserved but not improved toward ZA: `55.63297 -> 55.63473` versus `55.55556` (relative peak error `.139% -> .143%`). Core-4 mass drifted slightly away (`.0733014 -> .0733036`, ZA `.0732827`). Despite being incomplete, step 6 already has lower loss than the flat theta0 attractor (`.003486` at peak `55.2298`), establishing a distinct sharp low-loss basin; it does not establish its converged endpoint. A continuation would need to resume step 6 on a different node / safer cuBLAS autotuning configuration.
