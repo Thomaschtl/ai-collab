@@ -562,3 +562,13 @@ Le LM est sain et concluant : 40/40 pas acceptés, 32 ratios sur 40 supérieurs 
 Les résidus finaux sont minuscules (RMS M0/M1 `1.45e-4/1.29e-4`) et répartis : M1 `center_w16 Q1/P0` porte 37.5% de M1; M0 est dominé par `tile_±16_w4 Q1/P0` (18.35% chacun) et `tile_±8_w4 Q2/P0` (16.01% chacun). Il n'y a pas une unique strate du cœur qui plafonne. Conclusion : les lignes M0/M1 discrètes ne déterminent pas le pli depuis une IC fixée seulement en valeur; ce n'est plus un problème de solveur ou de conditionnement.
 
 La table post-shell polynomiale `smooth_branch_potential_weak_polyfit_a1001` et son 21.9% sont retirés : un polynôme global de degré 3 ne respecte pas la naissance d'une branche à un nœud. La première table spline reste la référence; aucune autre table statique n'a été lancée. Le prototype post-shell reste fermé puisque le contrôle pré-shell corrigé échoue physiquement. Artefacts : `run/local_diag/fold_potential_prototype_free_slopes_more/` et rapport consolidé `run/local_diag/fold_potential_sequence_20261027/REPORT.md`.
+
+## 2026-10-27 — Rectification : couverture champ/lignes réparée
+
+La conclusion précédente « les lignes ne déterminent pas le pli » est retirée. Couper la base libre à `|x|=32dx` imposait `j=-partial_a Phi=0` aux faces de la boîte de 64 cellules alors que ZA y fait entrer 2.8% de masse. Le faux plateau à cellule centrale `-8.48%` était donc une incompatibilité de configuration.
+
+La base apprise a été restaurée sur tout le domaine et 32 tuiles de 64 cellules ajoutées entre `32dx` et les deux bords. L'audit automatique passe : 45 boîtes/24 300 lignes, 15/15 colonnes spatiales vues, support libre non couvert nul, 54 faces à courant ZA contrôlées et aucune bloquée. Le préflight exact reste à `3.445e-11`.
+
+Le LM accepte 23/23 pas puis s'arrête par la règle de progrès sur trois pas. Loss `3.8003e-3 -> 9.7965e-4`; la cellule centrale part à `-30.29%`, traverse ZA entre les pas 15 et 16, puis finit à `+9.09%`. Masse4 finale `-7.291%`, `r3=.4710`: le test ne passe pas, mais sa trajectoire est qualitativement différente du faux plateau.
+
+Le résidu restant est localisé au cœur, pas dans les nouvelles tuiles extérieures : les lignes M1 `tile_±16_w4`, `tile_±8_w4`, `tile_±4_w4`, toutes Q1/P0, portent ensemble 77.3% de l'énergie M1 finale. La prochaine variable isolée est donc l'ajout de boîtes décentrées d'une cellule dans le cœur; elle n'a pas été lancée. Artefacts : `run/local_diag/fold_potential_prototype_free_slopes_full_coverage/`; synthèse mise à jour dans `run/local_diag/fold_potential_sequence_20261027/REPORT.md`.
